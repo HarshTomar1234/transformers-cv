@@ -53,7 +53,7 @@ This section contains detailed architectural diagrams created in Excalidraw to e
 The following diagram illustrates the complete DETR pipeline from input image to final predictions:
 
 <p align="center">
-<img src="DETR architecture overview.png" alt="DETR Complete Architecture" width="100%">
+<img src="architecture_diagrams/DETR architecture overview.png" alt="DETR Complete Architecture" width="100%">
 </p>
 
 **Key Components Illustrated:**
@@ -77,7 +77,7 @@ The following diagram illustrates the complete DETR pipeline from input image to
 The encoder architecture with detailed attention mechanisms and positional encoding strategies:
 
 <p align="center">
-<img src="DETR Encoder structure.png" alt="DETR Encoder Structure" width="100%">
+<img src="architecture_diagrams/DETR Encoder structure.png" alt="DETR Encoder Structure" width="100%">
 </p>
 
 **Core Concepts Explained:**
@@ -106,7 +106,7 @@ Where positional encodings (PE) are added: Q = features + PE, K = features + PE
 The decoder architecture showing object queries, self-attention, and cross-attention mechanisms:
 
 <p align="center">
-<img src="DETR decoder structure.png" alt="DETR Decoder Structure" width="100%">
+<img src="architecture_diagrams/DETR decoder structure.png" alt="DETR Decoder Structure" width="100%">
 </p>
 
 **Object Queries Explained:**
@@ -137,7 +137,7 @@ The decoder architecture showing object queries, self-attention, and cross-atten
 The bipartite matching algorithm and loss computation explained step-by-step:
 
 <p align="center">
-<img src="hungarian matching and DETR loss.png" alt="Hungarian Matching and DETR Loss" width="100%">
+<img src="architecture_diagrams/hungarian matching and DETR loss.png" alt="Hungarian Matching and DETR Loss" width="100%">
 </p>
 
 **Hungarian Matching Process:**
