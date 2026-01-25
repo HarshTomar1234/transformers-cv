@@ -8,8 +8,10 @@ A comprehensive repository for understanding and implementing transformer-based 
 
 | Architecture | Description | Status |
 |--------------|-------------|--------|
+| [ViT](./ViT/) | Vision Transformer - Image classification with pure transformers | Complete (CIFAR-10 + ImageNet) |
 | [DETR](./DETR/) | Detection Transformer - End-to-end object detection | Documentation Complete |
-| [DeiT](./DeIT/) | Data-efficient Image Transformers | Coming Soon |
+| [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
+| [Swin Transformer](./Swin%20Transformer/) | Hierarchical Vision Transformer with shifted windows | Paper Only |
 
 ---
 
@@ -17,14 +19,23 @@ A comprehensive repository for understanding and implementing transformer-based 
 
 ```
 transformers-CV/
+├── ViT/
+│   ├── README.md                        # Detailed ViT documentation
+│   ├── imgs/                            # Architecture diagrams
+│   ├── VisionTransformer.ipynb          # Main notebook
+│   ├── Vision Transformer on CIFAR-10/  # From-scratch implementation
+│   ├── Vision transformer on ImageNet/  # ImageNet training code
+│   └── Vision Transformer paper.pdf     # Original research paper
 ├── DETR/
-│   ├── README.md                    # Detailed DETR documentation
-│   ├── architecture_diagrams/       # Excalidraw architecture diagrams
-│   ├── DETR inference notebooks/    # Image and video inference
-│   ├── DETR paper.pdf               # Original research paper
-│   └── videos/                      # Sample inference outputs
+│   ├── README.md                        # Detailed DETR documentation
+│   ├── architecture_diagrams/           # Excalidraw architecture diagrams
+│   ├── DETR inference notebooks/        # Image and video inference
+│   ├── DETR paper.pdf                   # Original research paper
+│   └── videos/                          # Sample inference outputs
 ├── DeIT/
-│   └── (Coming Soon)
+│   └── DeIT paper.pdf                   # DeiT research paper
+├── Swin Transformer/
+│   └── Swin Transformer paper.pdf       # Swin Transformer research paper
 ├── .gitignore
 ├── LICENSE
 └── README.md
