@@ -251,34 +251,6 @@ This notebook demonstrates:
 | Pre-trained Model Inference | Complete (notebooks available) |
 | Custom DETR Implementation | Planned |
 
-### Planned Implementation
-
-A complete from-scratch implementation of DETR is planned for this repository. The implementation will include:
-
-**Backbone:**
-- [ ] ResNet-50 feature extractor
-- [ ] Feature map projection to transformer dimension
-
-**Transformer Encoder:**
-- [ ] Multi-head self-attention with 2D positional encoding
-- [ ] Encoder layer with FFN and layer normalization
-- [ ] Stack of 6 encoder layers
-
-**Transformer Decoder:**
-- [ ] Learnable object queries (100 queries)
-- [ ] Self-attention among object queries
-- [ ] Cross-attention with encoder output
-- [ ] Stack of 6 decoder layers
-
-**Prediction Heads:**
-- [ ] Classification head (class + "no object")
-- [ ] Bounding box regression head (center, width, height)
-
-**Training Components:**
-- [ ] Hungarian matching algorithm
-- [ ] Set-based loss function (classification + bbox + GIoU)
-- [ ] Training loop with COCO dataset
-
 ---
 
 ## References
