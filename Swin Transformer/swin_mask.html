@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swin Transformer — Shifted Window Masking Explained</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700;900&display=swap');
+
+  :root {
+    --bg: #0c0f1a;
+    --surface: #151929;
+    --surface2: #1c2137;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --green: #00b894;
+    --red: #e74c3c;
+    --orange: #f39c12;
+    --blue: #3498db;
+    --pink: #fd79a8;
+    --text: #e8e6f0;
+    --text-dim: #8a88a0;
+    --border: #2a2f47;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent2), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    margin-bottom: 48px;
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+  }
+
+  .section {
+    margin-bottom: 56px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title .num {
+    background: var(--accent);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  p {
+    margin-bottom: 16px;
+    color: var(--text);
+    font-size: 0.98rem;
+  }
+
+  .highlight {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .warn {
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  .good {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  /* Grid diagrams */
+  .diagram-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+
+  .diagram-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .grid-container {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .grid-wrapper {
+    text-align: center;
+  }
+
+  .grid-wrapper h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--accent2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .feature-grid {
+    display: grid;
+    gap: 2px;
+    margin: 0 auto;
+  }
+
+  .feature-grid.g8 {
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+  }
+
+  .feature-grid.g4 {
+    grid-template-columns: repeat(4, 48px);
+    grid-template-rows: repeat(4, 48px);
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: transform 0.2s;
+    position: relative;
+  }
+
+  .cell:hover {
+    transform: scale(1.15);
+    z-index: 10;
+  }
+
+  /* Window colors */
+  .w-A { background: rgba(108, 92, 231, 0.55); color: #d5d0ff; }
+  .w-B { background: rgba(0, 184, 148, 0.55); color: #b0ffe8; }
+  .w-C { background: rgba(243, 156, 18, 0.55); color: #fff0c8; }
+  .w-D { background: rgba(231, 76, 60, 0.5); color: #ffd0ca; }
+
+  /* Region labels after shift + cyclic shift */
+  .r-A { background: rgba(108, 92, 231, 0.6); color: #d5d0ff; }
+  .r-B { background: rgba(0, 184, 148, 0.6); color: #b0ffe8; }
+  .r-C { background: rgba(243, 156, 18, 0.6); color: #fff0c8; }
+
+  /* Window borders */
+  .window-group {
+    outline: 3px solid rgba(255,255,255,0.3);
+    outline-offset: -1px;
+    border-radius: 4px;
+  }
+
+  /* Arrow between diagrams */
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--accent2);
+    align-self: center;
+  }
+
+  /* Math formula */
+  .formula-box {
+    background: linear-gradient(135deg, var(--surface), var(--surface2));
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 24px 32px;
+    margin: 20px 0;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent2);
+    line-height: 2;
+  }
+
+  .formula-box .main {
+    font-size: 1.15rem;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  /* Attention matrix viz */
+  .attn-matrix {
+    display: grid;
+    gap: 1px;
+    margin: 0 auto;
+    width: fit-content;
+  }
+
+  .attn-cell {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    border-radius: 3px;
+  }
+
+  .attn-valid { background: rgba(0, 184, 148, 0.5); color: #b0ffe8; }
+  .attn-masked { background: rgba(231, 76, 60, 0.35); color: #ff9a8c; }
+  .attn-zero { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+
+  /* Key insight boxes */
+  .insight {
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.1), rgba(253, 121, 168, 0.08));
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+
+  .insight-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--pink);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  /* Step-by-step flow */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 24px 0;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 52px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .flow-dot {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  .flow-content h4 {
+    font-size: 1rem;
+    color: var(--accent2);
+    margin-bottom: 4px;
+  }
+
+  .flow-content p {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  /* Softmax demo */
+  .softmax-demo {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+
+  .softmax-item {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .softmax-item .val {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .softmax-item .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .eq-sign {
+    font-size: 1.5rem;
+    color: var(--text-dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    h1 { font-size: 1.8rem; }
+    .grid-container { flex-direction: column; align-items: center; }
+    .feature-grid.g8 {
+      grid-template-columns: repeat(8, 32px);
+      grid-template-rows: repeat(8, 32px);
+    }
+    .cell { font-size: 0.55rem; }
+  }
+
+  .color-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .legend-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+  }
+
+  .matrix-labels {
+    display: flex;
+    margin-bottom: 4px;
+    margin-left: 40px;
+    gap: 1px;
+  }
+
+  .matrix-label {
+    width: 36px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+  }
+
+  .matrix-row {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .row-label {
+    width: 36px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Swin Transformer Masking</h1>
+  <p class="subtitle">Why we add <code>mask_ij</code> in the shifted window attention — a visual deep-dive</p>
+
+  <!-- ============ SECTION 1: Regular Window ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">1</span> Regular (Non-Shifted) Window Partition</div>
+    <p>Consider an <span class="highlight">8×8 feature map</span> divided into <span class="highlight">4 non-overlapping windows</span> of size 4×4. Each window computes self-attention independently. Tokens <span class="good">only attend to tokens in the same window</span>.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Layer ℓ — Regular Window Partition</div>
+      <div class="color-legend">
+        <div class="legend-item"><div class="legend-swatch w-A"></div> Window 0</div>
+        <div class="legend-item"><div class="legend-swatch w-B"></div> Window 1</div>
+        <div class="legend-item"><div class="legend-swatch w-C"></div> Window 2</div>
+        <div class="legend-item"><div class="legend-swatch w-D"></div> Window 3</div>
+      </div>
+      <div class="grid-wrapper">
+        <div class="feature-grid g8" id="regular-grid"></div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">⚠️ Problem</div>
+      <p style="margin:0">Tokens at window <strong>boundaries can never interact</strong> with their neighbors in adjacent windows. This limits the receptive field and hurts performance. We need <strong>cross-window connections</strong>.</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2: Shifted Window ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">2</span> Shifted Window Partition</div>
+    <p>In the next layer, we <span class="highlight">shift the window grid by (M/2, M/2)</span> — here by (2, 2) pixels. Now the windows cover different regions, enabling cross-window token interaction.</p>
+    <p>But this creates a problem: the shift produces <span class="warn">9 irregular sub-regions</span> instead of 4 clean windows. Some are tiny (2×2 or even 2×4). Computing attention on 9 separate windows is wasteful.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Layer ℓ+1 — After Shifting by (2,2)</div>
+      <div class="grid-wrapper">
+        <div class="feature-grid g8" id="shifted-grid"></div>
+      </div>
+      <p style="text-align:center; margin-top:16px; color:var(--text-dim); font-size:0.85rem;">
+        Notice: 9 sub-regions of different sizes — very inefficient!
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3: Cyclic Shift ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">3</span> Cyclic Shift — The Clever Trick</div>
+    <p>Instead of computing attention on 9 irregular windows, Swin Transformer uses a <span class="highlight">cyclic shift</span>: move the top-left border regions to the bottom-right. This rearranges the 8×8 grid so we get back to exactly <span class="good">4 windows of size 4×4</span>.</p>
+    <p>But now some windows contain tokens from <span class="warn">different original regions</span> that were <strong>NOT adjacent</strong> in the original image! These tokens should <strong>NOT attend to each other</strong>.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Cyclic Shift → Back to 4 Regular Windows</div>
+      <div class="grid-container">
+        <div class="grid-wrapper">
+          <h3>Before Cyclic Shift (Shifted)</h3>
+          <div class="feature-grid g8" id="pre-cyclic"></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="grid-wrapper">
+          <h3>After Cyclic Shift</h3>
+          <div class="feature-grid g8" id="post-cyclic"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">🔑 Key Insight</div>
+      <p style="margin:0">After cyclic shift, <strong>Window 1 (top-right)</strong> now contains tokens from two originally distant regions. <strong>Window 2 (bottom-left)</strong> also mixes regions. <strong>Window 3 (bottom-right)</strong> mixes tokens from <em>four</em> different original regions! We need a <strong>mask</strong> to prevent illegal cross-region attention.</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: WHY mask = 0 or -inf ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">4</span> Why mask = 0 and mask = −∞?</div>
+
+    <p>The attention formula with masking is:</p>
+    <div class="formula-box">
+      <div class="main">d<sub>ij</sub> = softmax( Q<sub>i</sub>·K<sub>j</sub><sup>T</sup> / √d + b<sub>ij</sub> + <span style="color:var(--pink)">mask<sub>ij</sub></span> )</div>
+    </div>
+
+    <p>The mask is added <span class="highlight">before softmax</span>. This placement is critical because of how softmax works:</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">A</div>
+        <div class="flow-content">
+          <h4>mask<sub>ij</sub> = 0 → "Allow attention"</h4>
+          <p>Tokens i and j are from the <strong>same original region</strong>. Adding 0 changes nothing — the attention score passes through normally. The softmax output will be a normal positive probability.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">B</div>
+        <div class="flow-content">
+          <h4>mask<sub>ij</sub> = −∞ → "Block attention"</h4>
+          <p>Tokens i and j are from <strong>different original regions</strong>. Adding −∞ makes the pre-softmax score go to negative infinity. When softmax sees −∞, it outputs <strong>exactly 0</strong> — that token pair is completely ignored.</p>
+        </div>
+      </div>
+    </div>
+
+    <p>Here's the mathematical proof of why −∞ works:</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Softmax with −∞ Example</div>
+      <p style="text-align:center; margin-bottom:12px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-dim);">
+        Suppose pre-softmax logits = [2.0, 1.5, −∞, 0.8]
+      </p>
+      <div class="softmax-demo">
+        <div class="softmax-item">
+          <div class="val" style="color:var(--green)">e<sup>2.0</sup></div>
+          <div class="label">= 7.39</div>
+        </div>
+        <div class="softmax-item">
+          <div class="val" style="color:var(--green)">e<sup>1.5</sup></div>
+          <div class="label">= 4.48</div>
+        </div>
+        <div class="softmax-item">
+          <div class="val" style="color:var(--red)">e<sup>−∞</sup></div>
+          <div class="label">= 0.00</div>
+        </div>
+        <div class="softmax-item">
+          <div class="val" style="color:var(--green)">e<sup>0.8</sup></div>
+          <div class="label">= 2.23</div>
+        </div>
+      </div>
+      <p style="text-align:center; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:0.85rem;">
+        softmax = [7.39, 4.48, <span style="color:var(--red);font-weight:700">0.00</span>, 2.23] / 14.10
+        = [<span style="color:var(--green)">0.524</span>, <span style="color:var(--green)">0.318</span>, <span style="color:var(--red);font-weight:700">0.000</span>, <span style="color:var(--green)">0.158</span>]
+      </p>
+      <p style="text-align:center; margin-top:8px; color:var(--pink); font-size:0.85rem; font-weight:600;">
+        The masked position gets EXACTLY zero attention weight!
+      </p>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">💡 Why not just use 0 and 1?</div>
+      <p style="margin:0">We can't simply multiply by 0 after softmax — that would break the probability distribution (wouldn't sum to 1). By adding −∞ <strong>before</strong> softmax, the masked positions naturally get 0 weight and the remaining positions redistribute to sum to 1. It's mathematically clean.</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5: Attention Matrix Visualization ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">5</span> Masked Attention Matrix — Inside a Mixed Window</div>
+    <p>Consider <span class="highlight">Window 3 (bottom-right)</span> after cyclic shift. It contains tokens from multiple original regions. Here's how the attention mask looks for a simplified 4×4 window containing 2 regions:</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Attention Mask Matrix for a Mixed Window</div>
+      <p style="text-align:center; margin-bottom:16px; font-size:0.85rem; color:var(--text-dim);">
+        Rows = Query tokens, Columns = Key tokens<br>
+        Region A tokens: [0,1,2,3] &nbsp;|&nbsp; Region B tokens: [4,5,6,7]
+      </p>
+      <div style="display:flex; justify-content:center;">
+        <div>
+          <div class="matrix-labels">
+            <div class="matrix-label" style="color:var(--accent2)">0</div>
+            <div class="matrix-label" style="color:var(--accent2)">1</div>
+            <div class="matrix-label" style="color:var(--accent2)">2</div>
+            <div class="matrix-label" style="color:var(--accent2)">3</div>
+            <div class="matrix-label" style="color:var(--orange)">4</div>
+            <div class="matrix-label" style="color:var(--orange)">5</div>
+            <div class="matrix-label" style="color:var(--orange)">6</div>
+            <div class="matrix-label" style="color:var(--orange)">7</div>
+          </div>
+          <div id="attn-matrix"></div>
+        </div>
+      </div>
+      <div class="color-legend" style="margin-top:16px;">
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(0,184,148,0.5)"></div> mask = 0 (attend)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(231,76,60,0.35)"></div> mask = −∞ (blocked)</div>
+      </div>
+    </div>
+
+    <p>The mask ensures that Region A tokens <span class="good">only attend to other Region A tokens</span>, and Region B tokens <span class="good">only attend to other Region B tokens</span>. Cross-region attention is <span class="warn">completely zeroed out</span> by the −∞ mask.</p>
+  </div>
+
+  <!-- ============ SECTION 6: Full Pipeline ============ -->
+  <div class="section">
+    <div class="section-title"><span class="num">6</span> Complete Pipeline Summary</div>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <h4>Shift the window grid by (M/2, M/2)</h4>
+          <p>Creates cross-window connections but produces 9 irregular sub-regions.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <h4>Apply cyclic shift (torch.roll)</h4>
+          <p>Moves border fragments to opposite edges → back to 4 clean 4×4 windows. Some windows now contain mixed regions.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <h4>Compute Q·K<sup>T</sup>/√d + b<sub>ij</sub> + mask<sub>ij</sub></h4>
+          <p>mask = 0 for same-region pairs, mask = −∞ for cross-region pairs.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <h4>Apply softmax</h4>
+          <p>−∞ positions become 0 weight. Same-region positions get valid probabilities summing to 1.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-content">
+          <h4>Multiply attention weights × Values</h4>
+          <p>Masked-out tokens contribute nothing to the output.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">6</div>
+        <div class="flow-content">
+          <h4>Reverse cyclic shift</h4>
+          <p>Move tokens back to original positions. The output is as if we computed attention on the shifted (irregular) windows, but efficiently!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">🎯 The Genius</div>
+      <p style="margin:0">The mask lets us compute attention on <strong>regular-sized windows</strong> (efficient for GPU parallelism) while getting the effect of <strong>shifted irregular windows</strong> (cross-window connections). We get the <strong>best of both worlds</strong>: efficiency + expanded receptive field.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Build regular window grid
+  function buildRegularGrid() {
+    const grid = document.getElementById('regular-grid');
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        // Window assignment: top-left 4x4 = A, top-right = B, bottom-left = C, bottom-right = D
+        let w;
+        if (r < 4 && c < 4) w = 'A';
+        else if (r < 4 && c >= 4) w = 'B';
+        else if (r >= 4 && c < 4) w = 'C';
+        else w = 'D';
+        cell.classList.add('w-' + w);
+        cell.textContent = w;
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // Build shifted window grid (shifted by 2,2)
+  function buildShiftedGrid() {
+    const grid = document.getElementById('shifted-grid');
+    // After shifting by (2,2), the new window boundaries are at rows 2,6 and cols 2,6
+    // So regions become a 3x3 grid of sub-regions
+    // Using region IDs to show which tokens group together
+    const regionColors = [
+      // row 0-1: top strip
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      // row 2-5: middle
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      // row 6-7: bottom strip
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+    ];
+
+    const colorMap = {
+      'r1': '#e74c3c', 'r2': '#f39c12', 'r3': '#2ecc71',
+      'r4': '#3498db', 'r5': '#6c5ce7', 'r6': '#fd79a8',
+      'r7': '#00cec9', 'r8': '#e17055', 'r9': '#636e72'
+    };
+
+    const labelMap = {
+      'r1': '①', 'r2': '②', 'r3': '③',
+      'r4': '④', 'r5': '⑤', 'r6': '⑥',
+      'r7': '⑦', 'r8': '⑧', 'r9': '⑨'
+    };
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const region = regionColors[r][c];
+        cell.style.background = colorMap[region] + '88';
+        cell.style.color = '#fff';
+        cell.textContent = labelMap[region];
+        cell.style.fontSize = '0.75rem';
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // Pre-cyclic = same as shifted
+  function buildPreCyclic() {
+    const grid = document.getElementById('pre-cyclic');
+    const regionColors = [
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+    ];
+
+    const colorMap = {
+      'r1': '#e74c3c', 'r2': '#f39c12', 'r3': '#2ecc71',
+      'r4': '#3498db', 'r5': '#6c5ce7', 'r6': '#fd79a8',
+      'r7': '#00cec9', 'r8': '#e17055', 'r9': '#636e72'
+    };
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const region = regionColors[r][c];
+        cell.style.background = colorMap[region] + '88';
+        cell.style.color = '#fff';
+        cell.style.fontSize = '0.6rem';
+        cell.textContent = region.replace('r','');
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // Post-cyclic: cyclically shifted by (-2,-2) i.e. top-2-rows go to bottom, left-2-cols go to right
+  function buildPostCyclic() {
+    const grid = document.getElementById('post-cyclic');
+    // After cyclic shift (roll by -2 in both dims):
+    // Rows 2-7 move up, rows 0-1 go to bottom
+    // Cols 2-7 move left, cols 0-1 go to right
+    const pre = [
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      ['r1','r1','r2','r2','r2','r2','r3','r3'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r4','r4','r5','r5','r5','r5','r6','r6'],
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+      ['r7','r7','r8','r8','r8','r8','r9','r9'],
+    ];
+
+    const post = [];
+    for (let r = 0; r < 8; r++) {
+      post[r] = [];
+      for (let c = 0; c < 8; c++) {
+        const srcR = (r + 2) % 8;
+        const srcC = (c + 2) % 8;
+        post[r][c] = pre[srcR][srcC];
+      }
+    }
+
+    const colorMap = {
+      'r1': '#e74c3c', 'r2': '#f39c12', 'r3': '#2ecc71',
+      'r4': '#3498db', 'r5': '#6c5ce7', 'r6': '#fd79a8',
+      'r7': '#00cec9', 'r8': '#e17055', 'r9': '#636e72'
+    };
+
+    // Draw window boundaries (4x4 windows)
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const region = post[r][c];
+        cell.style.background = colorMap[region] + '88';
+        cell.style.color = '#fff';
+        cell.style.fontSize = '0.6rem';
+        cell.textContent = region.replace('r','');
+
+        // Add window borders
+        let border = '';
+        if (r === 0 || r === 4) border += 'border-top: 3px solid rgba(255,255,255,0.6);';
+        if (c === 0 || c === 4) border += 'border-left: 3px solid rgba(255,255,255,0.6);';
+        if (r === 3 || r === 7) border += 'border-bottom: 3px solid rgba(255,255,255,0.6);';
+        if (c === 3 || c === 7) border += 'border-right: 3px solid rgba(255,255,255,0.6);';
+        cell.style.cssText += border;
+
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // Build attention mask matrix
+  function buildAttnMatrix() {
+    const container = document.getElementById('attn-matrix');
+    const regionA = [0,1,2,3]; // from region A
+    const regionB = [4,5,6,7]; // from region B
+
+    const labels = ['A0','A1','A2','A3','B0','B1','B2','B3'];
+    const labelColors = ['var(--accent2)','var(--accent2)','var(--accent2)','var(--accent2)',
+                         'var(--orange)','var(--orange)','var(--orange)','var(--orange)'];
+
+    for (let i = 0; i < 8; i++) {
+      const row = document.createElement('div');
+      row.className = 'matrix-row';
+
+      const rl = document.createElement('div');
+      rl.className = 'row-label';
+      rl.style.color = labelColors[i];
+      rl.textContent = labels[i];
+      row.appendChild(rl);
+
+      for (let j = 0; j < 8; j++) {
+        const cell = document.createElement('div');
+        cell.className = 'attn-cell';
+
+        const iRegion = i < 4 ? 'A' : 'B';
+        const jRegion = j < 4 ? 'A' : 'B';
+
+        if (iRegion === jRegion) {
+          cell.classList.add('attn-valid');
+          cell.textContent = '0';
+        } else {
+          cell.classList.add('attn-masked');
+          cell.textContent = '−∞';
+        }
+
+        row.appendChild(cell);
+      }
+      container.appendChild(row);
+    }
+  }
+
+  // Initialize
+  buildRegularGrid();
+  buildShiftedGrid();
+  buildPreCyclic();
+  buildPostCyclic();
+  buildAttnMatrix();
+</script>
+</body>
+</html>
