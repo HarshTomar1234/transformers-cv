@@ -11,7 +11,7 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [ViT](./ViT/) | Vision Transformer - Image classification with pure transformers | Complete (CIFAR-10 + ImageNet) |
 | [DETR](./DETR/) | Detection Transformer - End-to-end object detection | Documentation Complete |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
-| [Swin Transformer](./Swin%20Transformer/) | Hierarchical Vision Transformer with shifted windows | Paper Only |
+| [Swin Transformer](./Swin%20Transformer/) | Hierarchical Vision Transformer with shifted windows | Documentation Complete |
 
 ---
 
@@ -32,10 +32,15 @@ transformers-CV/
 │   ├── DETR inference notebooks/        # Image and video inference
 │   ├── DETR paper.pdf                   # Original research paper
 │   └── videos/                          # Sample inference outputs
+├── Swin Transformer/
+│   ├── Swin Transformer architecture overview.png  # Architecture diagram
+│   ├── swin_transformer_masking_notes.md           # Detailed masking explanation
+│   ├── swin_transformer_masking.pdf                # Masking documentation PDF
+│   ├── swin_mask.html                              # Interactive masking demo
+│   ├── Swin Transformer.excalidraw                 # Editable diagram source
+│   └── Swin Transformer paper.pdf                  # Original research paper
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
-├── Swin Transformer/
-│   └── Swin Transformer paper.pdf       # Swin Transformer research paper
 ├── .gitignore
 ├── LICENSE
 └── README.md
