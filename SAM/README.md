@@ -8,7 +8,6 @@
 
 1. [Overview](#overview)
 2. [Architecture](#architecture)
-   - [Complete Architecture Overview](#complete-architecture-overview)
    - [Image Encoder](#image-encoder)
    - [Prompt Encoder](#prompt-encoder)
    - [Mask Decoder](#mask-decoder)
