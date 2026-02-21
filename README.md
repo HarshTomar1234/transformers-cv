@@ -47,7 +47,6 @@ transformers-CV/
 ├── SAM/
 │   ├── README.md                        # Detailed SAM documentation
 │   ├── Segment_Anything_Model_(SAM).ipynb  # Inference notebook
-│   ├── SAM architecture breakdown.svg  # Architecture diagram
 │   ├── Segment Anything Model (SAM).excalidraw
 │   └── Segment Anything model paper.pdf
 ├── DeIT/
