@@ -62,14 +62,6 @@ Image Embedding -----> Mask Decoder <----- Prompt Tokens
 
 ---
 
-### Complete Architecture Overview
-
-<p align="center">
-<img src="SAM architecture breakdown.svg" alt="SAM Architecture Breakdown" width="100%">
-</p>
-
----
-
 ### Image Encoder
 
 The heaviest component. A Vision Transformer (ViT) pre-trained with MAE (Masked Autoencoder) processes the input image into a dense embedding.
@@ -169,7 +161,6 @@ masks, scores, logits = predictor.predict(
 
 | Resource | File | Description |
 |----------|------|-------------|
-| Architecture SVG | [SAM architecture breakdown.svg](SAM%20architecture%20breakdown.svg) | Architecture breakdown diagram |
 | Editable Source | [Segment Anything Model (SAM).excalidraw](Segment%20Anything%20Model%20(SAM).excalidraw) | Excalidraw source file for the architecture diagram |
 
 ---
