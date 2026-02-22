@@ -1,0 +1,4 @@
+# Ignore downloaded data (large files)
+videos/
+frames/
+annotations/*.csv
