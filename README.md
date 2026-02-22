@@ -11,7 +11,8 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [ViT](./ViT/) | Vision Transformer -- Image classification with pure transformers | Complete (CIFAR-10 + ImageNet) |
 | [DETR](./DETR/) | Detection Transformer -- End-to-end object detection | Documentation + Inference |
 | [Swin Transformer](./Swin%20Transformer/) | Hierarchical Vision Transformer with shifted windows | Documentation + From-Scratch Implementation |
-| [SAM](./SAM/) | Segment Anything Model -- Foundation model for image segmentation | Documentation + Inference |
+| [SAM](./SAM/) | Segment Anything Model -- Foundation model for image segmentation | Documentation + Inference (SAM + SAM 2) |
+| [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + Dataset Scripts |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
 ---
@@ -46,9 +47,21 @@ transformers-CV/
 │   └── Swin Transformer paper.pdf
 ├── SAM/
 │   ├── README.md                        # Detailed SAM documentation
-│   ├── Segment_Anything_Model_(SAM).ipynb  # Inference notebook
+│   ├── Segment_Anything_Model_(SAM).ipynb           # SAM inference notebook
+│   ├── Segmentation_of_images_with_SAM_2.ipynb      # SAM 2 image segmentation
+│   ├── Segment_video_with_SAM_2 .ipynb              # SAM 2 video segmentation
+│   ├── result_videos/                   # SAM 2 video segmentation outputs
 │   ├── Segment Anything Model (SAM).excalidraw
 │   └── Segment Anything model paper.pdf
+├── TimeSformer/
+│   ├── README.md                        # Detailed TimeSformer documentation
+│   ├── timeSfomer architecture.png      # Architecture diagram
+│   ├── timeSformer architecture breakdown.excalidraw
+│   ├── timeSformer paper.pdf            # Original research paper
+│   ├── scripts/
+│   │   ├── download_videos.py           # Download Kinetics-400 videos
+│   │   └── extract_frames.py           # Extract frames from videos
+│   └── data/                            # Downloaded dataset (gitignored)
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
 ├── .gitignore
