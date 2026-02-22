@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TimeSformer — Pre-LN Architecture Diagram</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0d0d0f;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 40px 20px;
+    }
+
+    .container {
+      display: flex;
+      gap: 80px;
+      align-items: flex-start;
+    }
+
+    .diagram-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: #888;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 10px;
+      color: #444;
+      margin-bottom: 28px;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .legend {
+      margin-top: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .legend-title {
+      font-size: 10px;
+      color: #555;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .annotations {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 270px;
+      padding-top: 80px;
+    }
+
+    .ann-block {
+      border-left: 2px solid #222;
+      padding-left: 16px;
+      opacity: 0;
+      animation: fadeSlide 0.5s ease forwards;
+    }
+
+    .ann-block:nth-child(1) {
+      animation-delay: 0.2s;
+    }
+
+    .ann-block:nth-child(2) {
+      animation-delay: 0.4s;
+    }
+
+    .ann-block:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    .ann-block:nth-child(4) {
+      animation-delay: 0.8s;
+    }
+
+    .ann-block:nth-child(5) {
+      animation-delay: 1.0s;
+    }
+
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .ann-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .ann-text {
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #9b72cf;
+      background: #120e1a;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-top: 6px;
+      display: block;
+    }
+
+    .c-temporal {
+      color: #e07b54;
+    }
+
+    .c-spatial {
+      color: #5ba8e0;
+    }
+
+    .c-norm {
+      color: #9b72cf;
+    }
+
+    .c-mlp {
+      color: #60c97a;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="diagram-wrap">
+      <div class="title">Divided Space-Time Attention (T + S)</div>
+      <div class="subtitle">Pre-LN: x = x + sub_block(norm(x))</div>
+
+      <svg width="280" height="720" viewBox="0 0 280 720">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#444" />
+          </marker>
+          <marker id="arrow-res" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#2e2e2e" />
+          </marker>
+          <filter id="glow-t">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="glow-s">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <linearGradient id="grad-input" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1e1e22" />
+            <stop offset="100%" stop-color="#16161a" />
+          </linearGradient>
+          <linearGradient id="grad-temporal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3d1f10" />
+            <stop offset="100%" stop-color="#2a1508" />
+          </linearGradient>
+          <linearGradient id="grad-norm" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1e1428" />
+            <stop offset="100%" stop-color="#160f20" />
+          </linearGradient>
+          <linearGradient id="grad-spatial" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0e2233" />
+            <stop offset="100%" stop-color="#091828" />
+          </linearGradient>
+          <linearGradient id="grad-mlp" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0e2418" />
+            <stop offset="100%" stop-color="#091a10" />
+          </linearGradient>
+        </defs>
+
+        <!-- ─── Z^(l-1) INPUT ─── y=10..48 center=29 -->
+        <rect x="80" y="10" width="120" height="38" rx="6" fill="url(#grad-input)" stroke="#333" stroke-width="1" />
+        <text x="140" y="34" text-anchor="middle" fill="#aaa" font-size="13" font-family="JetBrains Mono">
+          z<tspan dy="-4" font-size="9">(ℓ−1)</tspan>
+        </text>
+
+        <!-- arrow → norm1 -->
+        <line x1="140" y1="48" x2="140" y2="73" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── NORM1 ─── y=75..107 center=91 -->
+        <rect x="90" y="75" width="100" height="32" rx="5" fill="url(#grad-norm)" stroke="#6a3fa0" stroke-width="1" />
+        <text x="140" y="96" text-anchor="middle" fill="#9b72cf" font-size="11"
+          font-family="JetBrains Mono">norm1</text>
+
+        <!-- arrow → Time Att -->
+        <line x1="140" y1="107" x2="140" y2="133" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── TIME ATT ─── y=135..175 center=155 -->
+        <rect x="65" y="135" width="150" height="40" rx="6" fill="url(#grad-temporal)" stroke="#e07b54"
+          stroke-width="1.2" filter="url(#glow-t)" />
+        <text x="140" y="158" text-anchor="middle" fill="#e07b54" font-size="12" font-family="JetBrains Mono"
+          font-weight="600">Time Att.</text>
+        <text x="140" y="170" text-anchor="middle" fill="#8a4a2a" font-size="9" font-family="JetBrains Mono">(b n) t d →
+          self-attn</text>
+
+        <!-- arrow → add1 -->
+        <line x1="140" y1="175" x2="140" y2="203" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- residual 1: z^(l-1) bypasses norm1 + Time Att → ⊕1 -->
+        <path d="M 210,29 C 245,29 245,217 165,217" stroke="#2e2e2e" stroke-width="1.2" fill="none"
+          marker-end="url(#arrow-res)" />
+
+        <!-- ─── ADD CIRCLE 1 ─── center=217 -->
+        <circle cx="140" cy="217" r="13" fill="#111" stroke="#444" stroke-width="1.2" />
+        <text x="140" y="222" text-anchor="middle" fill="#888" font-size="14">⊕</text>
+
+        <!-- code label -->
+        <text x="140" y="243" text-anchor="middle" fill="#333" font-size="9" font-family="JetBrains Mono">x = x +
+          time_attn(norm1(x))</text>
+
+        <!-- arrow → norm2 -->
+        <line x1="140" y1="248" x2="140" y2="273" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── NORM2 ─── y=275..307 center=291 -->
+        <rect x="90" y="275" width="100" height="32" rx="5" fill="url(#grad-norm)" stroke="#6a3fa0" stroke-width="1" />
+        <text x="140" y="296" text-anchor="middle" fill="#9b72cf" font-size="11"
+          font-family="JetBrains Mono">norm2</text>
+
+        <!-- arrow → Space Att -->
+        <line x1="140" y1="307" x2="140" y2="333" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── SPACE ATT ─── y=335..375 center=355 -->
+        <rect x="65" y="335" width="150" height="40" rx="6" fill="url(#grad-spatial)" stroke="#5ba8e0"
+          stroke-width="1.2" filter="url(#glow-s)" />
+        <text x="140" y="358" text-anchor="middle" fill="#5ba8e0" font-size="12" font-family="JetBrains Mono"
+          font-weight="600">Space Att.</text>
+        <text x="140" y="370" text-anchor="middle" fill="#2a5870" font-size="9" font-family="JetBrains Mono">(b t) n d →
+          self-attn</text>
+
+        <!-- arrow → add2 -->
+        <line x1="140" y1="375" x2="140" y2="403" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- residual 2: from ⊕1 output → ⊕2 -->
+        <path d="M 210,217 C 245,217 245,417 165,417" stroke="#2e2e2e" stroke-width="1.2" fill="none"
+          marker-end="url(#arrow-res)" />
+
+        <!-- ─── ADD CIRCLE 2 ─── center=417 -->
+        <circle cx="140" cy="417" r="13" fill="#111" stroke="#444" stroke-width="1.2" />
+        <text x="140" y="422" text-anchor="middle" fill="#888" font-size="14">⊕</text>
+
+        <!-- code label -->
+        <text x="140" y="443" text-anchor="middle" fill="#333" font-size="9" font-family="JetBrains Mono">x = x +
+          space_attn(norm2(x))</text>
+
+        <!-- arrow → norm3 -->
+        <line x1="140" y1="448" x2="140" y2="473" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── NORM3 ─── y=475..507 center=491 -->
+        <rect x="90" y="475" width="100" height="32" rx="5" fill="url(#grad-norm)" stroke="#6a3fa0" stroke-width="1" />
+        <text x="140" y="496" text-anchor="middle" fill="#9b72cf" font-size="11"
+          font-family="JetBrains Mono">norm3</text>
+
+        <!-- arrow → MLP -->
+        <line x1="140" y1="507" x2="140" y2="533" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── MLP ─── y=535..573 center=554 -->
+        <rect x="85" y="535" width="110" height="38" rx="6" fill="url(#grad-mlp)" stroke="#60c97a" stroke-width="1.2" />
+        <text x="140" y="559" text-anchor="middle" fill="#60c97a" font-size="12" font-family="JetBrains Mono"
+          font-weight="600">MLP</text>
+
+        <!-- arrow → add3 -->
+        <line x1="140" y1="573" x2="140" y2="611" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- residual 3: from ⊕2 → ⊕3 -->
+        <path d="M 210,417 C 245,417 245,625 165,625" stroke="#2e2e2e" stroke-width="1.2" fill="none"
+          marker-end="url(#arrow-res)" />
+
+        <!-- ─── ADD CIRCLE 3 ─── center=625 -->
+        <circle cx="140" cy="625" r="13" fill="#111" stroke="#444" stroke-width="1.2" />
+        <text x="140" y="630" text-anchor="middle" fill="#888" font-size="14">⊕</text>
+
+        <!-- code label -->
+        <text x="140" y="651" text-anchor="middle" fill="#333" font-size="9" font-family="JetBrains Mono">x = x +
+          mlp(norm3(x))</text>
+
+        <!-- arrow → z^l -->
+        <line x1="140" y1="656" x2="140" y2="681" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)" />
+
+        <!-- ─── Z^(l) OUTPUT ─── -->
+        <rect x="80" y="683" width="120" height="38" rx="6" fill="url(#grad-input)" stroke="#333" stroke-width="1" />
+        <text x="140" y="707" text-anchor="middle" fill="#aaa" font-size="13" font-family="JetBrains Mono">
+          z<tspan dy="-4" font-size="9">(ℓ)</tspan>
+        </text>
+
+      </svg>
+
+      <div class="legend">
+        <div class="legend-title">Legend</div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#e07b54;"></div><span class="c-temporal">Temporal Attention</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#5ba8e0;"></div><span class="c-spatial">Spatial Attention</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#9b72cf;"></div><span class="c-norm">Layer Norm</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#60c97a;"></div><span class="c-mlp">MLP</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#333; border:1px solid #444"></div><span style="color:#888">Residual
+            Skip</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotations -->
+    <div class="annotations">
+
+      <div class="ann-block" style="border-color:#9b72cf">
+        <div class="ann-label c-norm">Pre-LN Pattern</div>
+        <div class="ann-text">LayerNorm is applied <em>before</em> each sub-block. The normalized output goes through
+          the sub-block, then is added to the original input via residual connection. This is the standard approach used
+          in the original TimeSformer paper.</div>
+        <span class="code">x = x + sub_block(norm(x))</span>
+      </div>
+
+      <div class="ann-block" style="border-color:#e07b54">
+        <div class="ann-label c-temporal">Temporal Block</div>
+        <div class="ann-text">Rearrange → <code style="color:#e07b54;font-family:monospace">(b n) t d</code>, run
+          self-attn across T frames, rearrange back.</div>
+        <span class="code">xt = self.norm1(x)<br>xt = rearrange(xt, "b t n d → (b n) t d")<br>xt = temporal_attn(xt, xt,
+          xt)[0]<br>x = x + xt</span>
+      </div>
+
+      <div class="ann-block" style="border-color:#5ba8e0">
+        <div class="ann-label c-spatial">Spatial Block</div>
+        <div class="ann-text">Rearrange → <code style="color:#5ba8e0;font-family:monospace">(b t) n d</code>, run
+          self-attn across N patches within each frame, rearrange back.</div>
+        <span class="code">xs = self.norm2(x)<br>xs = rearrange(xs, "b t n d → (b t) n d")<br>xs = spatial_attn(xs, xs,
+          xs)[0]<br>x = x + xs</span>
+      </div>
+
+      <div class="ann-block" style="border-color:#60c97a">
+        <div class="ann-label c-mlp">MLP Block</div>
+        <div class="ann-text">Linear → GELU → Linear. Expands to 4× dim then projects back. Same Pre-LN pattern.</div>
+        <span class="code">x = x + mlp(norm3(x))</span>
+      </div>
+
+      <div class="ann-block" style="border-color:#444">
+        <div class="ann-label" style="color:#555">LN Placement — Pre-LN ✓</div>
+        <div class="ann-text">
+          <span style="color:#9b72cf">Pre-LN (this code):</span> LN → Att → ⊕<br>
+          <span style="color:#555">Post-LN:</span> Att → ⊕ → LN<br><br>
+          Pre-LN is preferred for deeper models — it provides better gradient flow and more stable training.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>
