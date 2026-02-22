@@ -148,6 +148,33 @@ masks, scores, logits = predictor.predict(
 
 ---
 
+## SAM 2 Notebooks
+
+SAM 2 extends the original SAM to support both image and video segmentation with a unified architecture that includes a memory mechanism for temporal consistency.
+
+### Image Segmentation with SAM 2
+
+**Notebook**: [Segmentation_of_images_with_SAM_2.ipynb](Segmentation_of_images_with_SAM_2.ipynb)
+
+Demonstrates SAM 2 inference on images, showing the improvements over the original SAM model.
+
+### Video Segmentation with SAM 2
+
+**Notebook**: [Segment_video_with_SAM_2 .ipynb](Segment_video_with_SAM_2%20.ipynb)
+
+Demonstrates SAM 2 video segmentation, where the model segments and tracks objects across video frames using its memory mechanism.
+
+### Result Videos
+
+Sample output videos from SAM 2 video segmentation:
+
+| Video | Description |
+|-------|-------------|
+| [basketball-1-result.mp4](result_videos/basketball-1-result.mp4) | Basketball segmentation result |
+| [tennis_match_video-result.mp4](result_videos/tennis_match_video-result.mp4) | Tennis match segmentation result |
+
+---
+
 ## Resources
 
 ### Research Paper
@@ -168,9 +195,11 @@ masks, scores, logits = predictor.predict(
 
 | Component | Status |
 |-----------|--------|
-| Architecture Diagram | Complete |
+| Architecture Diagram | Complete (Excalidraw source) |
 | Research Paper | Included |
-| Pre-trained Model Inference | Complete (notebook available) |
+| SAM Inference (ViT-B) | Complete (notebook available) |
+| SAM 2 Image Segmentation | Complete (notebook available) |
+| SAM 2 Video Segmentation | Complete (notebook + result videos) |
 | From-Scratch Implementation | Planned |
 
 ---
