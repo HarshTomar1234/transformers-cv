@@ -12,7 +12,8 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [DETR](./DETR/) | Detection Transformer -- End-to-end object detection | Documentation + Inference |
 | [Swin Transformer](./Swin%20Transformer/) | Hierarchical Vision Transformer with shifted windows | Documentation + From-Scratch Implementation |
 | [SAM](./SAM/) | Segment Anything Model -- Foundation model for image segmentation | Documentation + Inference (SAM + SAM 2) |
-| [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + Dataset Scripts |
+| [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + From-Scratch Implementation |
+| [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
 ---
@@ -55,6 +56,8 @@ transformers-CV/
 │   └── Segment Anything model paper.pdf
 ├── TimeSformer/
 │   ├── README.md                        # Detailed TimeSformer documentation
+│   ├── TimeSformer_implementation_from_scratch_V2.ipynb  # From-scratch implementation
+│   ├── timesformer_code_accurate.html   # Pre-LN architecture diagram
 │   ├── timeSfomer architecture.png      # Architecture diagram
 │   ├── timeSformer architecture breakdown.excalidraw
 │   ├── timeSformer paper.pdf            # Original research paper
@@ -62,6 +65,12 @@ transformers-CV/
 │   │   ├── download_videos.py           # Download Kinetics-400 videos
 │   │   └── extract_frames.py           # Extract frames from videos
 │   └── data/                            # Downloaded dataset (gitignored)
+├── Flamingo VLM/
+│   ├── README.md                        # Detailed Flamingo documentation
+│   ├── Flamingo_inference.ipynb         # Few-shot captioning with OpenFlamingo-9B
+│   ├── Flamingo VLM  breakdown.png     # Architecture breakdown diagram
+│   ├── Flamingo VLM architecture.excalidraw
+│   └── Flamingo VLM paper.pdf          # Original research paper
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
 ├── .gitignore
