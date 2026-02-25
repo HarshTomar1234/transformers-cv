@@ -47,6 +47,8 @@ The key insight: **freeze** the pretrained vision encoder and language model, an
 
 ## Architecture
 
+![Flamingo VLM Architecture Breakdown](Flamingo%20VLM%20%20breakdown.png)
+
 Flamingo connects a frozen vision encoder to a frozen language model through two new trained components:
 
 ```
