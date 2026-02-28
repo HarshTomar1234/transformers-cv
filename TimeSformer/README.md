@@ -1,4 +1,4 @@
-# TimeSformer -- Is Space-Time Attention All You Need for Video Understanding?
+# TimeSformer — Is Space-Time Attention All You Need for Video Understanding?
 
 **Paper:** [TimeSformer (ICML 2021)](https://arxiv.org/abs/2102.05095)
 **Authors:** Gedas Bertasius, Heng Wang, Lorenzo Torresani (Facebook AI)
@@ -25,9 +25,34 @@ For the editable architecture diagram, see the [Excalidraw source file](timeSfor
 
 ---
 
+## From-Scratch Implementation
+
+**Notebook**: [TimeSformer_implementation_from_scratch_V2.ipynb](TimeSformer_implementation_from_scratch_V2.ipynb)
+
+A complete from-scratch PyTorch implementation with **Pre-LN architecture** (LayerNorm before each sub-block), matching modern transformer best practices.
+
+### What the Notebook Covers
+
+1. **Dataset Pipeline** — `VideoFrameDataset` that loads frames from disk, applies augmentation, and uniformly samples `num_frames` per video
+2. **Architecture** — Full 12-block TimeSformer with divided space-time attention:
+   - Temporal attention (patches attend across frames at the same spatial position)
+   - Spatial attention (patches attend within each frame)
+   - Pre-LN pattern: `x = x + dropout(sub_block(norm(x)))`
+3. **ViT Weight Initialization** — Loads pretrained ViT-Base weights from `timm`, mapping spatial attention weights for transfer learning
+4. **Two-Stage Training**:
+   - Stage 1: Freeze ViT backbone, train only temporal attention + classification head (5 epochs, lr=1e-4)
+   - Stage 2: Unfreeze all layers, end-to-end fine-tuning (20 epochs, lr=2e-5, with early stopping)
+5. **Evaluation** — Per-class accuracy, confusion matrix, classification report, and sample prediction visualizations
+
+### Interactive Architecture Diagram
+
+The [Pre-LN architecture diagram](timesformer_code_accurate.html) provides an interactive HTML visualization showing the data flow through the TimeSformer model.
+
+---
+
 ## Dataset: Kinetics-400 (Mini Subset)
 
-This folder contains scripts to download a **3-class subset** of the [Kinetics-400](https://deepmind.google/discover/blog/open-sourcing-a-state-of-the-art-model/) dataset:
+This folder contains scripts to download a subset of the [Kinetics-400](https://deepmind.google/discover/blog/open-sourcing-a-state-of-the-art-model/) dataset:
 
 | Class | Description |
 |-------|-------------|
@@ -42,6 +67,8 @@ This folder contains scripts to download a **3-class subset** of the [Kinetics-4
 ```
 TimeSformer/
 ├── README.md                              # This file
+├── TimeSformer_implementation_from_scratch_V2.ipynb  # From-scratch implementation
+├── timesformer_code_accurate.html         # Interactive Pre-LN architecture diagram
 ├── timeSfomer architecture.png            # Architecture diagram
 ├── timeSformer architecture breakdown.excalidraw  # Editable diagram source
 ├── timeSformer paper.pdf                  # Original research paper
@@ -49,13 +76,7 @@ TimeSformer/
 │   ├── .gitignore                         # Ignores downloaded data
 │   ├── annotations/                       # Kinetics-400 CSVs (auto-downloaded)
 │   ├── videos/                            # Downloaded .mp4 clips
-│   │   ├── bench_pressing/
-│   │   ├── deadlifting/
-│   │   └── pull_ups/
 │   └── frames/                            # Extracted frames per video
-│       ├── bench_pressing/
-│       ├── deadlifting/
-│       └── pull_ups/
 └── scripts/
     ├── download_videos.py                 # Download K400 videos
     └── extract_frames.py                  # Extract frames from videos
@@ -112,11 +133,12 @@ python scripts/extract_frames.py --format png
 
 | Component | Status |
 |-----------|--------|
-| Architecture Diagram | Complete |
+| Architecture Diagram | Complete (Excalidraw + PNG) |
+| Interactive Diagram | Complete (HTML) |
 | Research Paper | Included |
 | Dataset Download Scripts | Complete (Kinetics-400 subset) |
 | Frame Extraction Scripts | Complete |
-| From-Scratch Implementation | Planned |
+| From-Scratch Implementation | Complete (Pre-LN, two-stage training, evaluation) |
 
 ---
 
