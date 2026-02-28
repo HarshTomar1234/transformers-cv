@@ -57,7 +57,7 @@ transformers-CV/
 ├── TimeSformer/
 │   ├── README.md                        # Detailed TimeSformer documentation
 │   ├── TimeSformer_implementation_from_scratch_V2.ipynb  # From-scratch implementation
-│   ├── timesformer_code_accurate.html   # Pre-LN architecture diagram
+│   ├── timesformer_code_accurate.html   # Interactive Pre-LN architecture diagram
 │   ├── timeSfomer architecture.png      # Architecture diagram
 │   ├── timeSformer architecture breakdown.excalidraw
 │   ├── timeSformer paper.pdf            # Original research paper
