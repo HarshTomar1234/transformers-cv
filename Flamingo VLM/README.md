@@ -146,15 +146,18 @@ The autoregressive language model that generates text conditioned on both text a
 
 **Notebook**: [Flamingo_inference.ipynb](Flamingo_inference.ipynb)
 
-This notebook demonstrates **few-shot image captioning** using OpenFlamingo-9B (ViT-L/14 + MPT-7B).
+Uses **OpenFlamingo-9B** (ViT-L/14 + MPT-7B). Demonstrates few-shot captioning with COCO images.
 
 **What the notebook covers:**
-- Installing OpenFlamingo and downloading the 9B checkpoint (~5.5 GB)
-- Loading the model with ViT-L/14 vision encoder and MPT-7B language model
-- **Few-shot captioning**: Providing 2 demo image-caption pairs as context, then generating a caption for a new query image
-- Handling the `<image>` and `<|endofchunk|>` special tokens for interleaved image-text input
+- Loading the OpenFlamingo-9B model with pretrained checkpoint
+- Few-shot image captioning using interleaved image-text prompts
+- Visual Question Answering with question-answer context pairs
 
-**Usage pattern:**
+**Requirements:**
+- GPU with 20+ GB VRAM (A100, L4, or equivalent — does not fit on Colab free tier T4/P100)
+- ~5.5 GB disk for the OpenFlamingo-9B checkpoint
+
+**Usage:**
 ```python
 from open_flamingo import create_model_and_transforms
 
@@ -178,14 +181,9 @@ generated_text = model.generate(
     lang_x=lang_x["input_ids"],
     attention_mask=lang_x["attention_mask"],
     max_new_tokens=8,
-    num_beams=2,
+    num_beams=3,
 )
 ```
-
-**Requirements:**
-- Google Colab with GPU runtime (T4 minimum, ~15 GB VRAM)
-- `open_flamingo`, `open-clip-torch`, HuggingFace Transformers
-- ~5.5 GB disk for the OpenFlamingo-9B checkpoint
 
 ---
 
@@ -212,7 +210,7 @@ generated_text = model.generate(
 |-----------|--------|
 | Architecture Diagram | Complete (Excalidraw + PNG) |
 | Research Paper | Included |
-| Inference (OpenFlamingo-9B) | Complete (few-shot captioning) |
+| Inference (OpenFlamingo-9B) | Complete (requires A100 or equivalent) |
 | From-Scratch Implementation | Possible future addition |
 
 ---
