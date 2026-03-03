@@ -14,6 +14,7 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [SAM](./SAM/) | Segment Anything Model -- Foundation model for image segmentation | Documentation + Inference (SAM + SAM 2) |
 | [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + From-Scratch Implementation |
 | [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
+| [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE -- Unsupervised representation learning | Vanilla AE + VAE Complete (VQVAE/RVQ Planned) |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
 ---
@@ -71,6 +72,11 @@ transformers-CV/
 │   ├── Flamingo VLM  breakdown.png     # Architecture breakdown diagram
 │   ├── Flamingo VLM architecture.excalidraw
 │   └── Flamingo VLM paper.pdf          # Original research paper
+├── AutoEncoders/
+│   ├── README.md                        # AutoEncoders overview documentation
+│   ├── images/                          # Theory diagrams (KL div, ELBO, VAE loss)
+│   ├── Vanilla Autoencoder/             # From-scratch AE on MNIST & FashionMNIST
+│   └── VAE/                             # From-scratch VAE on FashionMNIST
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
 ├── .gitignore
