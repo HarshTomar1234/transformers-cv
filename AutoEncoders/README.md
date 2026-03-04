@@ -40,11 +40,11 @@ This folder contains from-scratch PyTorch implementations of multiple autoencode
 </p>
 
 <p align="center">
-  <img src="images/vae_loss_derivation.png" alt="VAE Loss Derivation" width="600"/>
+  <img src="images/vae_loss_elbo.png" alt="VAE ELBO" width="600"/>
 </p>
 
 <p align="center">
-  <img src="images/vae_loss_elbo.png" alt="VAE ELBO" width="600"/>
+  <img src="images/vae_loss_derivation.png" alt="VAE Loss Derivation" width="600"/>
 </p>
 
 ---
