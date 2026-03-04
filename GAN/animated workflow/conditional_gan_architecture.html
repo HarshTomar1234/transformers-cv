@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conditional GAN Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --border: #1e2330;
+    --text: #c8cdd8;
+    --text-dim: #6b7280;
+    --accent-gen: #22d3ee;
+    --accent-gen-dim: rgba(34,211,238,0.12);
+    --accent-disc: #f472b6;
+    --accent-disc-dim: rgba(244,114,182,0.12);
+    --accent-cond: #a78bfa;
+    --accent-cond-dim: rgba(167,139,250,0.12);
+    --accent-loss: #fb923c;
+    --accent-loss-dim: rgba(251,146,60,0.12);
+    --accent-data: #34d399;
+    --accent-data-dim: rgba(52,211,153,0.12);
+    --noise: #facc15;
+    --noise-dim: rgba(250,204,21,0.12);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .canvas {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 32px 60px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cond), transparent);
+  }
+  .header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent-gen), var(--accent-cond), var(--accent-disc));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .header .paper {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-style: italic;
+    opacity: 0.6;
+  }
+
+  /* ── MAIN ARCHITECTURE SVG ── */
+  .arch-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .arch-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cond) 50%, transparent);
+    opacity: 0.5;
+  }
+
+  svg.main-arch {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── LEGEND ── */
+  .legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ── DETAIL CARDS ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 36px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: #2a3040; }
+  .card .accent-line {
+    position: absolute;
+    top: 0; left: 24px; right: 24px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+  }
+  .card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .card .formula {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+
+  /* ── ANIMATION ── */
+  @keyframes flowRight {
+    0% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .flow-line {
+    animation: flowRight 0.8s linear infinite;
+  }
+  .pulse { animation: pulse 2.5s ease-in-out infinite; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: fadeInUp 0.5s ease-out both; }
+  .card:nth-child(2) { animation-delay: 0.08s; }
+  .card:nth-child(3) { animation-delay: 0.16s; }
+  .card:nth-child(4) { animation-delay: 0.24s; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .canvas { padding: 24px 16px 40px; }
+    .header h1 { font-size: 20px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Conditional GAN Architecture</h1>
+    <div class="subtitle">Generative Adversarial Network with Class Conditioning</div>
+    <div class="paper">Mirza &amp; Osindero, 2014 — arXiv:1411.1784</div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-bar">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--noise)"></div>Noise Input z</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-cond)"></div>Condition y</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-gen)"></div>Generator G</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-disc)"></div>Discriminator D</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-data)"></div>Real Data x</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-loss)"></div>Loss / Output</div>
+  </div>
+
+  <!-- MAIN ARCHITECTURE DIAGRAM -->
+  <div class="arch-container">
+    <svg class="main-arch" viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Arrowhead markers -->
+        <marker id="arr-cyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22d3ee" stroke-width="1.2"/>
+        </marker>
+        <marker id="arr-pink" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#f472b6" stroke-width="1.2"/>
+        </marker>
+        <marker id="arr-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
+        </marker>
+        <marker id="arr-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#fb923c" stroke-width="1.2"/>
+        </marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#34d399" stroke-width="1.2"/>
+        </marker>
+        <marker id="arr-yellow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="none" stroke="#facc15" stroke-width="1.2"/>
+        </marker>
+
+        <!-- Glows -->
+        <filter id="glow-cyan"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#22d3ee" flood-opacity="0.35"/></filter>
+        <filter id="glow-pink"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f472b6" flood-opacity="0.35"/></filter>
+        <filter id="glow-purple"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#a78bfa" flood-opacity="0.35"/></filter>
+        <filter id="glow-orange"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#fb923c" flood-opacity="0.35"/></filter>
+        <filter id="glow-green"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#34d399" flood-opacity="0.35"/></filter>
+        <filter id="glow-yellow"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#facc15" flood-opacity="0.35"/></filter>
+      </defs>
+
+      <!-- ════════════════════════ INPUT SECTION (LEFT) ════════════════════════ -->
+
+      <!-- Noise z -->
+      <rect x="30" y="80" width="130" height="70" rx="10" fill="rgba(250,204,21,0.07)" stroke="#facc15" stroke-width="1.5" filter="url(#glow-yellow)"/>
+      <text x="95" y="108" text-anchor="middle" fill="#facc15" font-family="JetBrains Mono" font-size="13" font-weight="600">Noise z</text>
+      <text x="95" y="130" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="10">~ N(0, I)</text>
+      <text x="95" y="143" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">[batch × 100]</text>
+
+      <!-- Condition y (shared — top center of inputs) -->
+      <rect x="30" y="200" width="130" height="70" rx="10" fill="rgba(167,139,250,0.07)" stroke="#a78bfa" stroke-width="1.5" filter="url(#glow-purple)"/>
+      <text x="95" y="228" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="13" font-weight="600">Condition y</text>
+      <text x="95" y="250" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="10">Class Label</text>
+      <text x="95" y="263" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">[one-hot / embed]</text>
+
+      <!-- Real Data x -->
+      <rect x="30" y="440" width="130" height="70" rx="10" fill="rgba(52,211,153,0.07)" stroke="#34d399" stroke-width="1.5" filter="url(#glow-green)"/>
+      <text x="95" y="468" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="13" font-weight="600">Real Data x</text>
+      <text x="95" y="490" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="10">Training Samples</text>
+      <text x="95" y="503" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">[batch × features]</text>
+
+
+      <!-- ════════════════════════ CONCAT NODES ════════════════════════ -->
+
+      <!-- Concat for Generator (z ⊕ y) -->
+      <circle cx="260" cy="165" r="22" fill="rgba(167,139,250,0.1)" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="260" y="169" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11" font-weight="600">⊕</text>
+      <text x="260" y="200" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Concat</text>
+
+      <!-- Lines to concat node (z→⊕, y→⊕) -->
+      <line x1="160" y1="115" x2="238" y2="158" stroke="#facc15" stroke-width="1.2" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-yellow)"/>
+      <line x1="160" y1="228" x2="238" y2="172" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-purple)"/>
+
+      <!-- ════════════════════════ GENERATOR ════════════════════════ -->
+      <rect x="330" y="70" width="220" height="190" rx="14" fill="rgba(34,211,238,0.05)" stroke="#22d3ee" stroke-width="1.5" filter="url(#glow-cyan)"/>
+      <text x="440" y="97" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="14" font-weight="700">Generator G(z, y)</text>
+
+      <!-- Generator layers -->
+      <rect x="352" y="112" width="176" height="28" rx="5" fill="rgba(34,211,238,0.08)" stroke="#22d3ee" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="440" y="130" text-anchor="middle" fill="#8ecdd6" font-family="JetBrains Mono" font-size="10">FC 256 → ReLU</text>
+
+      <rect x="352" y="148" width="176" height="28" rx="5" fill="rgba(34,211,238,0.08)" stroke="#22d3ee" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="440" y="166" text-anchor="middle" fill="#8ecdd6" font-family="JetBrains Mono" font-size="10">FC 512 → BatchNorm → ReLU</text>
+
+      <rect x="352" y="184" width="176" height="28" rx="5" fill="rgba(34,211,238,0.08)" stroke="#22d3ee" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="440" y="202" text-anchor="middle" fill="#8ecdd6" font-family="JetBrains Mono" font-size="10">FC 1024 → BatchNorm → ReLU</text>
+
+      <rect x="352" y="220" width="176" height="28" rx="5" fill="rgba(34,211,238,0.12)" stroke="#22d3ee" stroke-width="0.8"/>
+      <text x="440" y="238" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="10" font-weight="500">FC output → Tanh</text>
+
+      <!-- Concat → Generator -->
+      <line x1="282" y1="165" x2="328" y2="165" stroke="#22d3ee" stroke-width="1.4" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-cyan)"/>
+
+
+      <!-- ════════════════════════ FAKE OUTPUT ════════════════════════ -->
+      <rect x="605" y="130" width="120" height="60" rx="10" fill="rgba(34,211,238,0.07)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="665" y="155" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="12" font-weight="600">G(z, y)</text>
+      <text x="665" y="175" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Fake Sample</text>
+
+      <!-- Generator → Fake -->
+      <line x1="550" y1="165" x2="603" y2="160" stroke="#22d3ee" stroke-width="1.4" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-cyan)"/>
+
+
+      <!-- ════════════════════════ SWITCH / SELECTOR ════════════════════════ -->
+      <!-- Real / Fake selector going to Discriminator -->
+      <rect x="770" y="260" width="44" height="80" rx="6" fill="rgba(255,255,255,0.03)" stroke="#2a3040" stroke-width="1"/>
+      <text x="792" y="295" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Real</text>
+      <text x="792" y="312" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">or</text>
+      <text x="792" y="328" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Fake</text>
+
+      <!-- Fake → Switch -->
+      <path d="M725,160 Q758,160 780,260" fill="none" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-cyan)"/>
+
+      <!-- Real data → Switch -->
+      <path d="M160,475 Q500,475 780,340" fill="none" stroke="#34d399" stroke-width="1.2" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-green)"/>
+
+      <!-- Condition y → Discriminator (goes down and across) -->
+      <path d="M95,270 Q95,360 260,360 Q500,360 750,300" fill="none" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4,4" class="flow-line" marker-end="url(#arr-purple)" opacity="0.7"/>
+      <text x="420" y="348" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="8" opacity="0.7">y fed to D</text>
+
+      <!-- Concat for Discriminator (x/G(z,y) ⊕ y) -->
+      <circle cx="845" cy="300" r="22" fill="rgba(167,139,250,0.1)" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="845" y="304" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11" font-weight="600">⊕</text>
+      <text x="845" y="340" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Concat</text>
+
+      <!-- Switch → Concat D -->
+      <line x1="814" y1="300" x2="822" y2="300" stroke="#c8cdd8" stroke-width="1" stroke-opacity="0.4"/>
+
+
+      <!-- ════════════════════════ DISCRIMINATOR ════════════════════════ -->
+      <rect x="890" y="190" width="220" height="220" rx="14" fill="rgba(244,114,182,0.05)" stroke="#f472b6" stroke-width="1.5" filter="url(#glow-pink)"/>
+      <text x="1000" y="218" text-anchor="middle" fill="#f472b6" font-family="JetBrains Mono" font-size="14" font-weight="700">Discriminator D(x, y)</text>
+
+      <!-- Discriminator layers -->
+      <rect x="912" y="235" width="176" height="28" rx="5" fill="rgba(244,114,182,0.08)" stroke="#f472b6" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="1000" y="253" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="10">FC 512 → LeakyReLU(0.2)</text>
+
+      <rect x="912" y="271" width="176" height="28" rx="5" fill="rgba(244,114,182,0.08)" stroke="#f472b6" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="1000" y="289" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="10">FC 256 → LeakyReLU(0.2)</text>
+
+      <rect x="912" y="307" width="176" height="28" rx="5" fill="rgba(244,114,182,0.08)" stroke="#f472b6" stroke-width="0.7" stroke-opacity="0.5"/>
+      <text x="1000" y="325" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="10">Dropout(0.3)</text>
+
+      <rect x="912" y="343" width="176" height="28" rx="5" fill="rgba(244,114,182,0.12)" stroke="#f472b6" stroke-width="0.8"/>
+      <text x="1000" y="361" text-anchor="middle" fill="#f472b6" font-family="JetBrains Mono" font-size="10" font-weight="500">FC 1 → Sigmoid</text>
+
+      <!-- Concat → Discriminator -->
+      <line x1="867" y1="300" x2="888" y2="300" stroke="#f472b6" stroke-width="1.4" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-pink)"/>
+
+
+      <!-- ════════════════════════ OUTPUT ════════════════════════ -->
+      <rect x="960" y="430" width="120" height="56" rx="10" fill="rgba(251,146,60,0.08)" stroke="#fb923c" stroke-width="1.4" filter="url(#glow-orange)"/>
+      <text x="1020" y="454" text-anchor="middle" fill="#fb923c" font-family="JetBrains Mono" font-size="12" font-weight="600">D(x, y)</text>
+      <text x="1020" y="474" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">Real? [0, 1]</text>
+
+      <!-- Discriminator → Output -->
+      <line x1="1000" y1="410" x2="1012" y2="428" stroke="#fb923c" stroke-width="1.4" stroke-dasharray="5,3" class="flow-line" marker-end="url(#arr-orange)"/>
+
+
+      <!-- ════════════════════════ LOSS / BACKPROP ARROWS ════════════════════════ -->
+      <!-- Adversarial Loss label at bottom -->
+      <rect x="400" y="540" width="400" height="50" rx="10" fill="rgba(251,146,60,0.06)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="600" y="560" text-anchor="middle" fill="#fb923c" font-family="JetBrains Mono" font-size="11" font-weight="600">Adversarial Loss (Binary Cross-Entropy)</text>
+      <text x="600" y="578" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">min_G max_D  E[log D(x,y)] + E[log(1 − D(G(z,y), y))]</text>
+
+      <!-- Backprop to G -->
+      <path d="M500,540 Q440,510 440,262" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="3,4" opacity="0.5" marker-end="url(#arr-orange)"/>
+      <text x="415" y="400" text-anchor="end" fill="#fb923c" font-family="JetBrains Mono" font-size="8" opacity="0.6">∇θ_G</text>
+
+      <!-- Backprop to D -->
+      <path d="M700,540 Q900,510 1000,412" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="3,4" opacity="0.5" marker-end="url(#arr-orange)"/>
+      <text x="900" y="488" text-anchor="start" fill="#fb923c" font-family="JetBrains Mono" font-size="8" opacity="0.6">∇θ_D</text>
+
+
+      <!-- ════════════════════════ ANNOTATIONS ════════════════════════ -->
+      <!-- Key difference callout -->
+      <rect x="220" y="18" width="260" height="38" rx="8" fill="rgba(167,139,250,0.06)" stroke="#a78bfa" stroke-width="0.8" stroke-dasharray="3,3"/>
+      <text x="350" y="34" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="9" font-weight="500">KEY: Condition y is fed to BOTH</text>
+      <text x="350" y="48" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="9" font-weight="500">Generator and Discriminator</text>
+
+      <!-- Pulsing dots on data flow -->
+      <circle cx="300" cy="163" r="3" fill="#a78bfa" class="pulse"/>
+      <circle cx="580" cy="163" r="3" fill="#22d3ee" class="pulse"/>
+      <circle cx="870" cy="300" r="3" fill="#f472b6" class="pulse"/>
+    </svg>
+  </div>
+
+  <!-- DETAIL CARDS -->
+  <div class="cards">
+    <div class="card">
+      <div class="accent-line" style="background:linear-gradient(90deg, var(--accent-gen), transparent)"></div>
+      <h3 style="color:var(--accent-gen)">⬡ Generator G(z, y)</h3>
+      <p>Takes a random noise vector <strong style="color:var(--noise)">z</strong> concatenated with class label <strong style="color:var(--accent-cond)">y</strong> and maps it to a data sample. The condition guides generation toward a specific class (e.g., a particular digit in MNIST).</p>
+      <div class="formula">G : (z, y) → x_fake<br>z ~ N(0, I),  y = one-hot(class)</div>
+    </div>
+    <div class="card">
+      <div class="accent-line" style="background:linear-gradient(90deg, var(--accent-disc), transparent)"></div>
+      <h3 style="color:var(--accent-disc)">◈ Discriminator D(x, y)</h3>
+      <p>Receives either a real sample <strong style="color:var(--accent-data)">x</strong> or fake sample <strong style="color:var(--accent-gen)">G(z,y)</strong>, concatenated with the same condition <strong style="color:var(--accent-cond)">y</strong>, and classifies whether the input is real or generated.</p>
+      <div class="formula">D : (x, y) → [0, 1]<br>1 = real,  0 = fake</div>
+    </div>
+    <div class="card">
+      <div class="accent-line" style="background:linear-gradient(90deg, var(--accent-cond), transparent)"></div>
+      <h3 style="color:var(--accent-cond)">◆ Conditioning Mechanism</h3>
+      <p>The condition <strong style="color:var(--accent-cond)">y</strong> (class label, attribute, text embedding) is the key differentiator from vanilla GAN. It is concatenated as additional input to both networks, enabling controlled, targeted generation.</p>
+      <div class="formula">Vanilla GAN: G(z), D(x)<br>cGAN:        G(z,y), D(x,y)</div>
+    </div>
+    <div class="card">
+      <div class="accent-line" style="background:linear-gradient(90deg, var(--accent-loss), transparent)"></div>
+      <h3 style="color:var(--accent-loss)">▲ Objective Function</h3>
+      <p>A minimax game conditioned on <strong style="color:var(--accent-cond)">y</strong>. The discriminator maximizes its ability to distinguish real from fake, while the generator minimizes the discriminator's success — both conditioned on the same label.</p>
+      <div class="formula">min_G max_D V(D,G) =<br>  E_x[log D(x|y)] + E_z[log(1 − D(G(z|y), y))]</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
