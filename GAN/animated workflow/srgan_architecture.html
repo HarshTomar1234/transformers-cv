@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRGAN Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0c10;--surface:#12151c;--border:#1e2330;--text:#c8cdd8;--dim:#6b7280;--gen:#22d3ee;--disc:#f472b6;--loss:#fb923c;--lr:#38bdf8;--hr:#34d399;--res:#a78bfa;--vgg:#e879f9;--pixel:#facc15;--up:#4ade80}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+  .canvas{max-width:1400px;margin:0 auto;padding:40px 32px 60px}
+  .header{text-align:center;margin-bottom:48px;position:relative}
+  .header::after{content:'';position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--up),transparent)}
+  .header h1{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--lr),var(--up),var(--hr));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header .sub{font-size:13px;color:var(--dim);margin-top:8px;letter-spacing:2px;text-transform:uppercase}
+  .header .paper{font-size:11px;color:var(--dim);margin-top:6px;font-style:italic;opacity:.6}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-bottom:36px}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--dim)}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .arch{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 24px;margin-bottom:28px;position:relative;overflow:hidden}
+  .arch::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gen) 50%,transparent);opacity:.5}
+  .arch h2{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;text-align:center;margin-bottom:20px}
+  svg.main{width:100%;height:auto;display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:32px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;position:relative;overflow:hidden;transition:border-color .3s}
+  .card:hover{border-color:#2a3040}
+  .card .al{position:absolute;top:0;left:22px;right:22px;height:2px;border-radius:0 0 2px 2px}
+  .card h3{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-bottom:10px}
+  .card p{font-size:12.5px;line-height:1.7;color:var(--dim)}
+  .card .f{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-top:10px;color:var(--text);line-height:1.5}
+  .loss-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-top:28px;position:relative;overflow:hidden}
+  .loss-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--loss) 50%,transparent);opacity:.5}
+  .loss-section h2{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--loss);margin-bottom:16px;text-align:center}
+  .losses{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .loss-card{border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .loss-card .num{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .loss-card p{font-size:12px;line-height:1.6;color:var(--dim)}
+  .loss-card .f{font-family:'JetBrains Mono',monospace;font-size:9.5px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;padding:7px 10px;margin-top:8px;color:var(--text);line-height:1.5}
+  @keyframes flowRight{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .flow{animation:flowRight .8s linear infinite}
+  .pulse{animation:pulse 2.5s ease-in-out infinite}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card,.loss-card{animation:fadeUp .5s ease-out both}
+  .card:nth-child(2),.loss-card:nth-child(2){animation-delay:.07s}
+  .card:nth-child(3),.loss-card:nth-child(3){animation-delay:.14s}
+  .card:nth-child(4){animation-delay:.21s}
+  .card:nth-child(5){animation-delay:.28s}
+  @media(max-width:768px){.canvas{padding:24px 16px 40px}.header h1{font-size:20px}.cards,.losses{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="header">
+    <h1>SRGAN Architecture</h1>
+    <div class="sub">Photo-Realistic Single Image Super-Resolution</div>
+    <div class="paper">Ledig et al., 2017 — arXiv:1609.04802</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--lr)"></div>LR Input</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gen)"></div>SRResNet Generator</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--res)"></div>Residual Blocks</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--up)"></div>PixelShuffle ↑</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--hr)"></div>HR Output</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--disc)"></div>Discriminator</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--vgg)"></div>VGG Perceptual</div>
+  </div>
+
+  <!-- GENERATOR -->
+  <div class="arch">
+    <h2 style="color:var(--gen)">Generator: SRResNet (Residual Network + PixelShuffle Upsampling)</h2>
+    <svg class="main" viewBox="0 0 1200 370" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#22d3ee" stroke-width="1.2"/></marker>
+        <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#a78bfa" stroke-width="1.2"/></marker>
+        <marker id="au" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#4ade80" stroke-width="1.2"/></marker>
+        <filter id="fg"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#22d3ee" flood-opacity=".25"/></filter>
+      </defs>
+
+      <!-- Key callout -->
+      <rect x="250" y="8" width="700" height="34" rx="8" fill="rgba(74,222,128,.05)" stroke="#4ade80" stroke-width=".8" stroke-dasharray="3,3"/>
+      <text x="600" y="22" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="9" font-weight="500">KEY: 4× upscaling via deep residual network + PixelShuffle — trained with perceptual loss, not just pixel loss</text>
+      <text x="600" y="36" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">VGG feature matching produces photo-realistic textures instead of blurry upscaling</text>
+
+      <!-- LR Input -->
+      <rect x="20" y="110" width="80" height="80" rx="8" fill="rgba(56,189,248,.06)" stroke="#38bdf8" stroke-width="1.5"/>
+      <text x="60" y="140" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="10" font-weight="700">I_LR</text>
+      <text x="60" y="158" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Low-Res</text>
+      <text x="60" y="172" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">W×H×3</text>
+      <text x="60" y="97" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="7" font-weight="500" opacity=".7">INPUT</text>
+
+      <!-- Generator box -->
+      <rect x="120" y="60" width="870" height="240" rx="14" fill="rgba(34,211,238,.03)" stroke="#22d3ee" stroke-width="1.5" filter="url(#fg)"/>
+      <text x="555" y="82" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="13" font-weight="700">SRResNet Generator G</text>
+
+      <!-- Initial Conv -->
+      <rect x="135" y="100" width="85" height="50" rx="6" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".7" stroke-opacity=".5"/>
+      <text x="177" y="120" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="8" font-weight="500">Conv 9×9</text>
+      <text x="177" y="136" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="7">64 filters</text>
+      <text x="177" y="146" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">PReLU</text>
+
+      <!-- LR → Conv -->
+      <line x1="100" y1="150" x2="133" y2="125" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="5,3" class="flow"/>
+
+      <!-- Residual Blocks -->
+      <rect x="240" y="95" width="340" height="100" rx="10" fill="rgba(167,139,250,.04)" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="410" y="116" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11" font-weight="700">16 × Residual Block</text>
+
+      <!-- Single res block detail -->
+      <rect x="260" y="126" width="300" height="55" rx="6" fill="rgba(167,139,250,.06)" stroke="#a78bfa" stroke-width=".7" stroke-opacity=".5"/>
+      <text x="410" y="143" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="8">Conv 3×3 → BN → PReLU → Conv 3×3 → BN</text>
+      <text x="410" y="158" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">64 filters each | + skip connection (element-wise add)</text>
+
+      <!-- Skip connection inside res block -->
+      <path d="M265,145 Q255,145 255,155 Q255,170 305,175" fill="none" stroke="#a78bfa" stroke-width=".8" stroke-dasharray="3,3" opacity=".5"/>
+      <text x="275" y="178" fill="#a78bfa" font-family="JetBrains Mono" font-size="6" opacity=".6">+ skip</text>
+
+      <!-- Arrow init conv → res blocks -->
+      <line x1="220" y1="125" x2="238" y2="140" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#ag)"/>
+
+      <!-- Post-residual conv + skip -->
+      <rect x="600" y="100" width="85" height="50" rx="6" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".7" stroke-opacity=".5"/>
+      <text x="642" y="118" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="8" font-weight="500">Conv 3×3</text>
+      <text x="642" y="132" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="7">BN</text>
+      <text x="642" y="146" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">+ global skip</text>
+      <line x1="580" y1="145" x2="598" y2="125" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#ar)"/>
+
+      <!-- Global skip from init conv to post-res -->
+      <path d="M220,125 Q220,205 430,205 Q640,205 642,152" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="6,4" class="flow" opacity=".4" marker-end="url(#ag)"/>
+      <text x="430" y="220" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="7" opacity=".5">Global skip connection (element-wise add)</text>
+
+      <!-- PixelShuffle Upsample blocks -->
+      <rect x="705" y="95" width="130" height="55" rx="6" fill="rgba(74,222,128,.07)" stroke="#4ade80" stroke-width="1"/>
+      <text x="770" y="113" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="9" font-weight="600">PixelShuffle ×2</text>
+      <text x="770" y="128" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Conv 3×3 → 256ch</text>
+      <text x="770" y="142" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Shuffle → 2× spatial</text>
+
+      <rect x="705" y="160" width="130" height="55" rx="6" fill="rgba(74,222,128,.08)" stroke="#4ade80" stroke-width="1"/>
+      <text x="770" y="178" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="9" font-weight="600">PixelShuffle ×2</text>
+      <text x="770" y="193" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Conv 3×3 → 256ch</text>
+      <text x="770" y="207" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Shuffle → 2× spatial</text>
+
+      <text x="770" y="232" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="7" opacity=".6">Total: ×4 upscale</text>
+
+      <line x1="685" y1="125" x2="703" y2="122" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#ag)"/>
+
+      <!-- Final conv -->
+      <rect x="855" y="100" width="85" height="50" rx="6" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="897" y="118" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="8" font-weight="600">Conv 9×9</text>
+      <text x="897" y="134" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="7">→ 3ch (RGB)</text>
+      <text x="897" y="146" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">Tanh</text>
+
+      <line x1="835" y1="140" x2="853" y2="125" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#au)"/>
+
+      <!-- Dimension flow at bottom -->
+      <rect x="135" y="260" width="805" height="28" rx="5" fill="rgba(34,211,238,.03)" stroke="#22d3ee" stroke-width=".5" stroke-dasharray="3,3"/>
+      <text x="537" y="278" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="8">W×H×3 → W×H×64 → [16 ResBlocks @ 64ch] → W×H×64 → 2W×2H×64 → 4W×4H×64 → 4W×4H×3</text>
+
+      <!-- HR Output -->
+      <rect x="1010" y="95" width="80" height="80" rx="8" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="1050" y="125" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="10" font-weight="700">I_SR</text>
+      <text x="1050" y="143" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Super-Res</text>
+      <text x="1050" y="157" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">4W×4H×3</text>
+      <text x="1050" y="82" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="7" font-weight="500" opacity=".7">OUTPUT ×4</text>
+      <line x1="940" y1="125" x2="1008" y2="135" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#ag)"/>
+      <circle cx="975" cy="130" r="2.5" fill="#22d3ee" class="pulse"/>
+    </svg>
+  </div>
+
+  <!-- DISCRIMINATOR -->
+  <div class="arch">
+    <h2 style="color:var(--disc)">Discriminator: VGG-style Classification Network</h2>
+    <svg class="main" viewBox="0 0 1200 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="apd" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#f472b6" stroke-width="1.2"/></marker>
+        <marker id="apo" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#fb923c" stroke-width="1.2"/></marker>
+        <filter id="fpd"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f472b6" flood-opacity=".25"/></filter>
+      </defs>
+
+      <!-- Inputs -->
+      <rect x="20" y="30" width="80" height="55" rx="8" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="1"/>
+      <text x="60" y="53" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="9" font-weight="600">I_HR</text>
+      <text x="60" y="72" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">or I_SR</text>
+
+      <!-- D network -->
+      <rect x="130" y="15" width="820" height="120" rx="12" fill="rgba(244,114,182,.04)" stroke="#f472b6" stroke-width="1.5" filter="url(#fpd)"/>
+      <text x="540" y="36" text-anchor="middle" fill="#f472b6" font-family="JetBrains Mono" font-size="12" font-weight="700">Discriminator D — VGG-style (8 Conv blocks)</text>
+
+      <!-- Conv blocks -->
+      <rect x="148" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.06)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".4"/>
+      <text x="187" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s1 LR</text>
+      <text x="187" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">64</text>
+
+      <rect x="234" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.06)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".4"/>
+      <text x="273" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s2 BN LR</text>
+      <text x="273" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">64 ↓</text>
+
+      <rect x="320" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.07)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".5"/>
+      <text x="359" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s1 BN LR</text>
+      <text x="359" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">128</text>
+
+      <rect x="406" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.07)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".5"/>
+      <text x="445" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s2 BN LR</text>
+      <text x="445" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">128 ↓</text>
+
+      <text x="498" y="68" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">...</text>
+
+      <rect x="520" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.08)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".5"/>
+      <text x="559" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s1 BN LR</text>
+      <text x="559" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">512</text>
+
+      <rect x="606" y="48" width="78" height="35" rx="4" fill="rgba(244,114,182,.09)" stroke="#f472b6" stroke-width=".5" stroke-opacity=".6"/>
+      <text x="645" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Conv s2 BN LR</text>
+      <text x="645" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">512 ↓</text>
+
+      <!-- Dense classifier -->
+      <rect x="700" y="48" width="100" height="35" rx="4" fill="rgba(244,114,182,.06)" stroke="#f472b6" stroke-width=".6"/>
+      <text x="750" y="62" text-anchor="middle" fill="#d194b0" font-family="JetBrains Mono" font-size="7">Dense 1024 → LR</text>
+      <text x="750" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">FC flatten</text>
+
+      <rect x="810" y="48" width="90" height="35" rx="4" fill="rgba(244,114,182,.14)" stroke="#f472b6" stroke-width="1"/>
+      <text x="855" y="62" text-anchor="middle" fill="#f472b6" font-family="JetBrains Mono" font-size="8" font-weight="600">Dense 1</text>
+      <text x="855" y="76" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">Sigmoid</text>
+
+      <!-- Input → D -->
+      <line x1="100" y1="57" x2="146" y2="65" stroke="#f472b6" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#apd)"/>
+
+      <!-- D → output -->
+      <rect x="970" y="40" width="90" height="50" rx="8" fill="rgba(251,146,60,.06)" stroke="#fb923c" stroke-width="1.2"/>
+      <text x="1015" y="62" text-anchor="middle" fill="#fb923c" font-family="JetBrains Mono" font-size="11" font-weight="700">D(x)</text>
+      <text x="1015" y="80" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">[0, 1]</text>
+      <line x1="900" y1="65" x2="968" y2="65" stroke="#fb923c" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#apo)"/>
+
+      <!-- Note -->
+      <text x="540" y="110" text-anchor="middle" fill="#f472b6" font-family="JetBrains Mono" font-size="8" opacity=".5">8 Conv blocks with increasing filters (64→128→256→512) | Alternating s=1 and s=2 (downsample)</text>
+      <text x="540" y="125" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">LeakyReLU(α=0.2) throughout | BatchNorm on all except first conv</text>
+    </svg>
+  </div>
+
+  <!-- DETAIL CARDS -->
+  <div class="cards">
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--gen),transparent)"></div>
+      <h3 style="color:var(--gen)">⬡ SRResNet Generator</h3>
+      <p>Deep residual network with 16 residual blocks operating at LR resolution, followed by PixelShuffle upsampling. Large 9×9 kernels at input/output capture broad context. Global skip connection aids gradient flow from input to output.</p>
+      <div class="f">16 ResBlocks (Conv-BN-PReLU-Conv-BN + skip)<br>2× PixelShuffle upsamplers (total ×4)<br>Global skip: input features added to output</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--up),transparent)"></div>
+      <h3 style="color:var(--up)">◆ PixelShuffle (Sub-Pixel Conv)</h3>
+      <p>Upsamples by rearranging channels into spatial dimensions. A conv produces r² channels, then PixelShuffle reshapes H×W×(C·r²) → rH×rW×C. More efficient and artifact-free than transposed convolutions or bilinear upsampling.</p>
+      <div class="f">Conv: H×W → H×W×(64·4) = H×W×256<br>Shuffle: H×W×256 → 2H×2W×64<br>×2 applied twice = ×4 total upscale</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--vgg),transparent)"></div>
+      <h3 style="color:var(--vgg)">◈ Perceptual Loss (VGG)</h3>
+      <p>The breakthrough: instead of comparing pixels directly (MSE → blurry), compare high-level feature representations from a pre-trained VGG19 network. Features from conv5_4 capture texture and structure, producing photo-realistic outputs.</p>
+      <div class="f">L_VGG = ‖φ_5,4(I_SR) − φ_5,4(I_HR)‖₂²<br>φ = VGG19 feature extractor (frozen)<br>Captures texture, not just pixel color</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--res),transparent)"></div>
+      <h3 style="color:var(--res)">▲ Residual Blocks</h3>
+      <p>16 identical blocks with skip connections enable very deep networks without degradation. Each block: Conv3×3 → BN → PReLU → Conv3×3 → BN, with element-wise addition of the input. All processing happens at LR resolution for efficiency.</p>
+      <div class="f">ResBlock(x) = x + Conv(PReLU(BN(Conv(x))))<br>All 16 blocks @ LR resolution (efficient)<br>PReLU activation (learnable slope)</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--lr),transparent)"></div>
+      <h3 style="color:var(--lr)">★ MSE vs SRGAN Output</h3>
+      <p>MSE-only training (SRResNet) achieves highest PSNR but produces over-smoothed results. SRGAN with perceptual+adversarial loss has lower PSNR but produces sharper, more photo-realistic textures that humans prefer. Quality ≠ PSNR.</p>
+      <div class="f">SRResNet (MSE): High PSNR, blurry<br>SRGAN (perceptual): Lower PSNR, photo-real<br>Human preference: SRGAN >> SRResNet</div>
+    </div>
+  </div>
+
+  <!-- LOSS BREAKDOWN -->
+  <div class="loss-section">
+    <h2>▸ Perceptual Loss Function (3 Components)</h2>
+    <div class="losses">
+      <div class="loss-card">
+        <div class="num" style="color:var(--vgg)">1. Content Loss (VGG Feature Matching)</div>
+        <p>Compare VGG19 feature maps of SR and HR images at conv5_4. Captures perceptual similarity — textures, edges, structure — rather than pixel-level accuracy. The key to photo-realism.</p>
+        <div class="f">L_content = (1/WH) ‖φ(I_SR) − φ(I_HR)‖₂²<br>φ = VGG19 features at conv5_4 (frozen)</div>
+      </div>
+      <div class="loss-card">
+        <div class="num" style="color:var(--disc)">2. Adversarial Loss</div>
+        <p>Standard GAN loss encouraging G to produce images that D classifies as real HR. Pushes generated images onto the manifold of natural high-resolution photographs.</p>
+        <div class="f">L_adv = −log D(G(I_LR))<br>Encourages photo-realistic textures</div>
+      </div>
+      <div class="loss-card">
+        <div class="num" style="color:var(--loss)">Full Perceptual Loss</div>
+        <p>Weighted combination of content and adversarial losses. Content loss dominates (λ=1e-3 for adversarial). Optional pixel-wise MSE can be added but reduces perceptual quality.</p>
+        <div class="f">L_perceptual = L_content + 1e-3 · L_adv<br>Optional: + L_MSE (but hurts perceptual quality)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
