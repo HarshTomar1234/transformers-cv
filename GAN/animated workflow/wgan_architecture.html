@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WGAN Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0c10;--surface:#12151c;--border:#1e2330;--text:#c8cdd8;--text-dim:#6b7280;--gen:#22d3ee;--critic:#e879f9;--loss:#fb923c;--data:#34d399;--noise:#facc15;--accent:#818cf8;--em:#f59e0b;--gp:#4ade80}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+  .canvas{max-width:1400px;margin:0 auto;padding:40px 32px 60px}
+  .header{text-align:center;margin-bottom:48px;position:relative}
+  .header::after{content:'';position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--critic),transparent)}
+  .header h1{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--em),var(--critic),var(--gen));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header .sub{font-size:13px;color:var(--text-dim);margin-top:8px;letter-spacing:2px;text-transform:uppercase}
+  .header .paper{font-size:11px;color:var(--text-dim);margin-top:6px;font-style:italic;opacity:.6}
+  .legend{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-bottom:36px}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-dim)}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .arch{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 24px;margin-bottom:28px;position:relative;overflow:hidden}
+  .arch::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--critic) 50%,transparent);opacity:.5}
+  svg.main{width:100%;height:auto;display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:32px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;position:relative;overflow:hidden;transition:border-color .3s}
+  .card:hover{border-color:#2a3040}
+  .card .aline{position:absolute;top:0;left:22px;right:22px;height:2px;border-radius:0 0 2px 2px}
+  .card h3{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-bottom:10px}
+  .card p{font-size:12.5px;line-height:1.7;color:var(--text-dim)}
+  .card .f{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-top:10px;color:var(--text);line-height:1.5}
+  .compare{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-top:28px;position:relative;overflow:hidden}
+  .compare::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--em) 50%,transparent);opacity:.5}
+  .compare h2{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--em);margin-bottom:16px;text-align:center}
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .cmp-col{border:1px solid var(--border);border-radius:10px;padding:18px}
+  .cmp-col h4{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+  .cmp-col ul{list-style:none;padding:0}
+  .cmp-col li{font-size:11.5px;color:var(--text-dim);line-height:1.8;padding-left:16px;position:relative}
+  .cmp-col li::before{content:'→';position:absolute;left:0;color:var(--text-dim);opacity:.5}
+  @keyframes flowRight{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .flow{animation:flowRight .8s linear infinite}
+  .pulse{animation:pulse 2.5s ease-in-out infinite}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card{animation:fadeUp .5s ease-out both}
+  .card:nth-child(2){animation-delay:.07s}.card:nth-child(3){animation-delay:.14s}.card:nth-child(4){animation-delay:.21s}
+  @media(max-width:768px){.canvas{padding:24px 16px 40px}.header h1{font-size:20px}.cards,.cmp-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="header">
+    <h1>WGAN / WGAN-GP Architecture</h1>
+    <div class="sub">Wasserstein GAN with Gradient Penalty</div>
+    <div class="paper">Arjovsky et al., 2017 (WGAN) — Gulrajani et al., 2017 (WGAN-GP)</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--noise)"></div>Noise z</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gen)"></div>Generator G</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--critic)"></div>Critic C (not D!)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--data)"></div>Real Data x</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gp)"></div>Gradient Penalty</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--loss)"></div>Wasserstein Loss</div>
+  </div>
+
+  <div class="arch">
+    <svg class="main" viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ac" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#22d3ee" stroke-width="1.2"/></marker>
+        <marker id="apu" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#e879f9" stroke-width="1.2"/></marker>
+        <marker id="ao" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#fb923c" stroke-width="1.2"/></marker>
+        <marker id="ag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#34d399" stroke-width="1.2"/></marker>
+        <marker id="ay" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#facc15" stroke-width="1.2"/></marker>
+        <marker id="agp" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#4ade80" stroke-width="1.2"/></marker>
+        <filter id="fc"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#22d3ee" flood-opacity=".35"/></filter>
+        <filter id="fpu"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#e879f9" flood-opacity=".35"/></filter>
+        <filter id="fy"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#facc15" flood-opacity=".3"/></filter>
+        <filter id="fo"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#fb923c" flood-opacity=".3"/></filter>
+        <filter id="fgr"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#34d399" flood-opacity=".3"/></filter>
+        <filter id="fgp"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#4ade80" flood-opacity=".3"/></filter>
+      </defs>
+
+      <!-- Key Innovation Callout -->
+      <rect x="300" y="10" width="600" height="36" rx="8" fill="rgba(232,121,249,.05)" stroke="#e879f9" stroke-width=".8" stroke-dasharray="3,3"/>
+      <text x="600" y="25" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="9" font-weight="500">KEY: Discriminator → Critic (no sigmoid) | BCE Loss → Wasserstein Distance | Weight Clipping → Gradient Penalty</text>
+      <text x="600" y="39" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Critic outputs unbounded real-valued score — not a probability</text>
+
+      <!-- ═══ NOISE z ═══ -->
+      <rect x="20" y="135" width="110" height="75" rx="10" fill="rgba(250,204,21,.06)" stroke="#facc15" stroke-width="1.5" filter="url(#fy)"/>
+      <text x="75" y="163" text-anchor="middle" fill="#facc15" font-family="JetBrains Mono" font-size="13" font-weight="700">z</text>
+      <text x="75" y="180" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">z ~ N(0, I)</text>
+      <text x="75" y="195" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">[batch × 128]</text>
+
+      <line x1="130" y1="172" x2="165" y2="172" stroke="#facc15" stroke-width="1.3" stroke-dasharray="5,3" class="flow" marker-end="url(#ay)"/>
+
+      <!-- ═══ GENERATOR ═══ -->
+      <rect x="170" y="75" width="260" height="200" rx="14" fill="rgba(34,211,238,.04)" stroke="#22d3ee" stroke-width="1.5" filter="url(#fc)"/>
+      <text x="300" y="98" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="14" font-weight="700">Generator G(z)</text>
+      <text x="300" y="112" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="8" opacity=".6">Same architecture as standard GAN</text>
+
+      <rect x="190" y="125" width="220" height="26" rx="5" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="300" y="142" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="9">FC / ConvT → BatchNorm → ReLU</text>
+      <rect x="190" y="157" width="220" height="26" rx="5" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="300" y="174" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="9">FC / ConvT → BatchNorm → ReLU</text>
+      <rect x="190" y="189" width="220" height="26" rx="5" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="300" y="206" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="9">FC / ConvT → BatchNorm → ReLU</text>
+      <rect x="190" y="221" width="220" height="26" rx="5" fill="rgba(34,211,238,.14)" stroke="#22d3ee" stroke-width=".9"/>
+      <text x="300" y="238" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="9" font-weight="600">Output → Tanh</text>
+      <text x="300" y="262" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">G trained 1 step per n_critic steps</text>
+
+      <!-- G → Fake -->
+      <rect x="470" y="140" width="100" height="65" rx="10" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="520" y="165" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="12" font-weight="600">G(z)</text>
+      <text x="520" y="182" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Fake Sample</text>
+      <text x="520" y="196" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">x_fake</text>
+      <line x1="430" y1="172" x2="468" y2="172" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="5,3" class="flow" marker-end="url(#ac)"/>
+      <circle cx="450" cy="172" r="2.5" fill="#22d3ee" class="pulse"/>
+
+      <!-- ═══ REAL DATA ═══ -->
+      <rect x="470" y="360" width="100" height="65" rx="10" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="1.5" filter="url(#fgr)"/>
+      <text x="520" y="385" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="12" font-weight="600">Real x</text>
+      <text x="520" y="402" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Training Data</text>
+      <text x="520" y="416" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">x_real</text>
+
+      <!-- ═══ INTERPOLATED SAMPLES (for GP) ═══ -->
+      <rect x="470" y="250" width="100" height="65" rx="10" fill="rgba(74,222,128,.06)" stroke="#4ade80" stroke-width="1.2" stroke-dasharray="3,2" filter="url(#fgp)"/>
+      <text x="520" y="272" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="10" font-weight="600">x̂</text>
+      <text x="520" y="288" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Interpolated</text>
+      <text x="520" y="302" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">x̂ = εx + (1−ε)G(z)</text>
+
+      <!-- Lines from fake and real to interpolated -->
+      <path d="M520,205 L520,248" fill="none" stroke="#4ade80" stroke-width=".8" stroke-dasharray="3,3" opacity=".5" marker-end="url(#agp)"/>
+      <path d="M520,358 L520,317" fill="none" stroke="#4ade80" stroke-width=".8" stroke-dasharray="3,3" opacity=".5" marker-end="url(#agp)"/>
+      <text x="548" y="230" fill="#4ade80" font-family="JetBrains Mono" font-size="7" opacity=".6">ε ~ U(0,1)</text>
+
+      <!-- ═══ PATHS TO CRITIC ═══ -->
+      <!-- Fake → Critic -->
+      <path d="M570,172 Q640,172 680,200" fill="none" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#ac)"/>
+      <!-- Real → Critic -->
+      <path d="M570,392 Q640,392 680,310" fill="none" stroke="#34d399" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#ag)"/>
+      <!-- Interpolated → Critic -->
+      <path d="M570,282 Q620,282 680,260" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#agp)"/>
+
+
+      <!-- ═══ CRITIC (NOT Discriminator) ═══ -->
+      <rect x="685" y="100" width="290" height="310" rx="14" fill="rgba(232,121,249,.04)" stroke="#e879f9" stroke-width="1.5" filter="url(#fpu)"/>
+      <text x="830" y="125" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="14" font-weight="700">Critic C(x)</text>
+      <text x="830" y="140" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="9" opacity=".6">NOT a Discriminator — outputs a score</text>
+
+      <!-- CRITICAL DIFFERENCE badge -->
+      <rect x="705" y="153" width="250" height="24" rx="4" fill="rgba(245,158,11,.08)" stroke="#f59e0b" stroke-width=".8"/>
+      <text x="830" y="169" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono" font-size="9" font-weight="600">⚠ NO SIGMOID — Unbounded Output ∈ ℝ</text>
+
+      <rect x="705" y="186" width="250" height="26" rx="5" fill="rgba(232,121,249,.07)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="830" y="203" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="9">FC / Conv → LayerNorm → LeakyReLU</text>
+      <rect x="705" y="218" width="250" height="26" rx="5" fill="rgba(232,121,249,.07)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="830" y="235" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="9">FC / Conv → LayerNorm → LeakyReLU</text>
+      <rect x="705" y="250" width="250" height="26" rx="5" fill="rgba(232,121,249,.08)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="830" y="267" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="9">FC / Conv → LayerNorm → LeakyReLU</text>
+
+      <rect x="705" y="285" width="250" height="26" rx="5" fill="rgba(232,121,249,.14)" stroke="#e879f9" stroke-width=".9"/>
+      <text x="830" y="302" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="9" font-weight="600">FC → Linear (no activation!)</text>
+
+      <!-- n_critic note -->
+      <rect x="705" y="320" width="250" height="34" rx="5" fill="rgba(232,121,249,.04)" stroke="#e879f9" stroke-width=".5" stroke-dasharray="3,3"/>
+      <text x="830" y="335" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="8" font-weight="500">Trained n_critic = 5 steps per G step</text>
+      <text x="830" y="348" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Uses RMSProp (α=0.00005) or Adam</text>
+
+      <!-- ═══ CRITIC OUTPUTS ═══ -->
+      <!-- Score for Real -->
+      <rect x="1010" y="155" width="120" height="48" rx="8" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="1"/>
+      <text x="1070" y="175" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="10" font-weight="600">C(x_real)</text>
+      <text x="1070" y="193" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Score ∈ ℝ (high)</text>
+
+      <!-- Score for Fake -->
+      <rect x="1010" y="215" width="120" height="48" rx="8" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="1070" y="235" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="10" font-weight="600">C(x_fake)</text>
+      <text x="1070" y="253" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Score ∈ ℝ (low)</text>
+
+      <!-- Gradient Penalty output -->
+      <rect x="1010" y="280" width="120" height="55" rx="8" fill="rgba(74,222,128,.06)" stroke="#4ade80" stroke-width="1.2" filter="url(#fgp)"/>
+      <text x="1070" y="300" text-anchor="middle" fill="#4ade80" font-family="JetBrains Mono" font-size="10" font-weight="600">GP(x̂)</text>
+      <text x="1070" y="315" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">(‖∇C(x̂)‖₂ − 1)²</text>
+      <text x="1070" y="328" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">λ = 10</text>
+
+      <!-- C → outputs -->
+      <line x1="975" y1="240" x2="1008" y2="179" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#ag)"/>
+      <line x1="975" y1="260" x2="1008" y2="239" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#ac)"/>
+      <line x1="975" y1="280" x2="1008" y2="307" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" class="flow" marker-end="url(#agp)"/>
+
+
+      <!-- ═══ WASSERSTEIN LOSS ═══ -->
+      <rect x="240" y="480" width="720" height="70" rx="12" fill="rgba(251,146,60,.05)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="600" y="500" text-anchor="middle" fill="#fb923c" font-family="JetBrains Mono" font-size="12" font-weight="700">Wasserstein Loss (Earth-Mover Distance)</text>
+      <text x="600" y="518" text-anchor="middle" fill="#c8cdd8" font-family="JetBrains Mono" font-size="9">L_C = E[C(x_fake)] − E[C(x_real)] + λ · E[(‖∇C(x̂)‖₂ − 1)²]</text>
+      <text x="600" y="536" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="9">L_G = −E[C(G(z))]    (Generator simply minimizes critic score on fakes)</text>
+
+      <!-- Backprop -->
+      <path d="M400,480 Q300,440 300,278" fill="none" stroke="#fb923c" stroke-width=".8" stroke-dasharray="3,4" opacity=".4" marker-end="url(#ao)"/>
+      <path d="M800,480 Q870,440 870,412" fill="none" stroke="#fb923c" stroke-width=".8" stroke-dasharray="3,4" opacity=".4" marker-end="url(#ao)"/>
+      <text x="280" y="380" text-anchor="end" fill="#fb923c" font-family="JetBrains Mono" font-size="7" opacity=".5">∇θ_G</text>
+      <text x="885" y="450" fill="#fb923c" font-family="JetBrains Mono" font-size="7" opacity=".5">∇θ_C</text>
+
+      <!-- EM distance interpretation -->
+      <rect x="1010" y="380" width="170" height="60" rx="8" fill="rgba(245,158,11,.05)" stroke="#f59e0b" stroke-width=".8" stroke-dasharray="3,3"/>
+      <text x="1095" y="398" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono" font-size="8" font-weight="600">W(p_r, p_g) ≈</text>
+      <text x="1095" y="413" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">E[C(real)] − E[C(fake)]</text>
+      <text x="1095" y="428" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">→ meaningful training metric!</text>
+    </svg>
+  </div>
+
+  <!-- DETAIL CARDS -->
+  <div class="cards">
+    <div class="card">
+      <div class="aline" style="background:linear-gradient(90deg,var(--critic),transparent)"></div>
+      <h3 style="color:var(--critic)">◈ Critic vs Discriminator</h3>
+      <p>The Critic outputs an unbounded real-valued score (no sigmoid), not a probability. Higher scores = "more real". This fundamentally changes the loss landscape — providing smooth, meaningful gradients everywhere, even when distributions don't overlap.</p>
+      <div class="f">Discriminator: D(x) → [0, 1] (saturates)<br>Critic: C(x) → ℝ (no saturation)</div>
+    </div>
+    <div class="card">
+      <div class="aline" style="background:linear-gradient(90deg,var(--loss),transparent)"></div>
+      <h3 style="color:var(--loss)">▲ Wasserstein Distance (EMD)</h3>
+      <p>Replaces JS-divergence/KL-divergence with Earth-Mover distance. EMD is continuous and differentiable almost everywhere — it doesn't go to infinity or zero when distributions don't overlap, solving the vanishing gradient problem.</p>
+      <div class="f">W(p_r, p_g) = inf E[‖x − y‖]<br>Approx via Kantorovich-Rubinstein duality</div>
+    </div>
+    <div class="card">
+      <div class="aline" style="background:linear-gradient(90deg,var(--gp),transparent)"></div>
+      <h3 style="color:var(--gp)">◆ Gradient Penalty (GP)</h3>
+      <p>WGAN-GP replaces weight clipping with a gradient penalty on interpolated samples x̂ = εx_real + (1−ε)x_fake. Penalizes the critic when its gradient norm deviates from 1, enforcing the 1-Lipschitz constraint more smoothly.</p>
+      <div class="f">GP = λ · E[(‖∇_x̂ C(x̂)‖₂ − 1)²]<br>λ = 10, ε ~ Uniform(0, 1)</div>
+    </div>
+    <div class="card">
+      <div class="aline" style="background:linear-gradient(90deg,var(--accent),transparent)"></div>
+      <h3 style="color:var(--accent)">⚡ Training Stability</h3>
+      <p>Critic is trained n_critic=5 times for every 1 Generator step. The Wasserstein loss correlates with sample quality (unlike BCE), giving a meaningful training metric. No mode collapse, no careful balancing of D vs G needed.</p>
+      <div class="f">W-distance ↓ → sample quality ↑<br>Meaningful convergence metric at last!</div>
+    </div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div class="compare">
+    <h2>▸ Standard GAN vs WGAN-GP</h2>
+    <div class="cmp-grid">
+      <div class="cmp-col">
+        <h4 style="color:var(--disc)">Standard GAN</h4>
+        <ul>
+          <li>Discriminator outputs P(real) via sigmoid</li>
+          <li>BCE loss (JS-divergence)</li>
+          <li>Vanishing gradients when D is too good</li>
+          <li>Mode collapse common</li>
+          <li>Loss doesn't correlate with quality</li>
+          <li>Careful D/G balance needed</li>
+        </ul>
+      </div>
+      <div class="cmp-col">
+        <h4 style="color:var(--critic)">WGAN-GP</h4>
+        <ul>
+          <li>Critic outputs unbounded score (no sigmoid)</li>
+          <li>Wasserstein distance (EMD)</li>
+          <li>Stable gradients everywhere</li>
+          <li>Mode collapse largely eliminated</li>
+          <li>Loss = meaningful quality metric</li>
+          <li>Train critic more (n=5), no balancing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
