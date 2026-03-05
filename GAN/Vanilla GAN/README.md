@@ -74,9 +74,23 @@ Replaces linear layers in the Generator with **transposed convolutions** and **b
 
 ## Results
 
-<img src="https://github.com/HarshTomar1234/transformers-cv/blob/main/GAN/images/mnist%20results.png?raw=true" alt="MNIST Generation Results" width="500"/>
+### Why GANs? — AutoEncoder Limitations
 
-Generated MNIST digits after 200 epochs of training, showing clear improvement over VAE-based generation.
+<img src="https://github.com/HarshTomar1234/transformers-cv/blob/main/GAN/images/mnist%20results.png?raw=true" alt="AutoEncoder MNIST Results" width="500"/>
+
+The image above shows outputs from various AutoEncoder architectures (AE, VAE, ConvAE, ConvVAE) — blurry and low quality, motivating the need for GANs.
+
+### Unconditional GAN Results (Epoch 200)
+
+<img src="https://github.com/HarshTomar1234/transformers-cv/blob/main/GAN/images/gan_results.png?raw=true" alt="Unconditional GAN Results" width="600"/>
+
+Random digit generation after 200 epochs — the generator learns to produce realistic MNIST digits from pure noise, though without any control over which digit is generated.
+
+### Conditional GAN Results (Epoch 200)
+
+<img src="https://github.com/HarshTomar1234/transformers-cv/blob/main/GAN/images/cgan_results.png?raw=true" alt="Conditional GAN Results" width="600"/>
+
+Controlled generation of digits 0–9 using class conditioning — each digit is generated on demand via learned embeddings, showing significantly better quality and control compared to the unconditional variant.
 
 ---
 
