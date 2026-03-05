@@ -6,7 +6,7 @@ A comprehensive exploration of GAN architectures — from the mathematical found
 
 ## Implementations
 
-| Architecture | Dataset | Description | Status |
+| Architecture | Dataset | Description |
 |-------------|---------|-------------|--------|
 | [Vanilla GAN](./Vanilla%20GAN/) | MNIST | Unconditional, Conditional, and Convolutional GANs with full math derivation | 
 | [DCGAN](./DCGAN/) | CelebA | Deep Convolutional GAN generating 64×64 face images | 
