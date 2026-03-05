@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pix2Pix Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0c10;--surface:#12151c;--border:#1e2330;--text:#c8cdd8;--dim:#6b7280;--gen:#22d3ee;--disc:#f472b6;--loss:#fb923c;--input:#38bdf8;--target:#34d399;--skip:#a78bfa;--l1:#facc15;--patch:#e879f9}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+  .canvas{max-width:1400px;margin:0 auto;padding:40px 32px 60px}
+  .header{text-align:center;margin-bottom:48px;position:relative}
+  .header::after{content:'';position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--skip),transparent)}
+  .header h1{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--input),var(--skip),var(--target));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header .sub{font-size:13px;color:var(--dim);margin-top:8px;letter-spacing:2px;text-transform:uppercase}
+  .header .paper{font-size:11px;color:var(--dim);margin-top:6px;font-style:italic;opacity:.6}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-bottom:36px}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--dim)}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .arch{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 24px;margin-bottom:28px;position:relative;overflow:hidden}
+  .arch::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gen) 50%,transparent);opacity:.5}
+  .arch h2{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;text-align:center;margin-bottom:20px}
+  svg.main{width:100%;height:auto;display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:32px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;position:relative;overflow:hidden;transition:border-color .3s}
+  .card:hover{border-color:#2a3040}
+  .card .al{position:absolute;top:0;left:22px;right:22px;height:2px;border-radius:0 0 2px 2px}
+  .card h3{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-bottom:10px}
+  .card p{font-size:12.5px;line-height:1.7;color:var(--dim)}
+  .card .f{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-top:10px;color:var(--text);line-height:1.5}
+  .loss-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-top:28px;position:relative;overflow:hidden}
+  .loss-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--loss) 50%,transparent);opacity:.5}
+  .loss-section h2{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--loss);margin-bottom:16px;text-align:center}
+  .losses{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .loss-card{border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .loss-card .num{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .loss-card p{font-size:12px;line-height:1.6;color:var(--dim)}
+  .loss-card .f{font-family:'JetBrains Mono',monospace;font-size:9.5px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;padding:7px 10px;margin-top:8px;color:var(--text);line-height:1.5}
+  @keyframes flowRight{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .flow{animation:flowRight .8s linear infinite}
+  .pulse{animation:pulse 2.5s ease-in-out infinite}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card,.loss-card{animation:fadeUp .5s ease-out both}
+  .card:nth-child(2),.loss-card:nth-child(2){animation-delay:.07s}
+  .card:nth-child(3){animation-delay:.14s}
+  .card:nth-child(4){animation-delay:.21s}
+  .card:nth-child(5){animation-delay:.28s}
+  @media(max-width:768px){.canvas{padding:24px 16px 40px}.header h1{font-size:20px}.cards,.losses{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="header">
+    <h1>Pix2Pix Architecture</h1>
+    <div class="sub">Paired Image-to-Image Translation with Conditional GANs</div>
+    <div class="paper">Isola et al., 2017 — arXiv:1611.07004</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--input)"></div>Input Image</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gen)"></div>Generator (U-Net)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--skip)"></div>Skip Connections</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--target)"></div>Target / Real</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--patch)"></div>PatchGAN D</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--l1)"></div>L1 Loss</div>
+  </div>
+
+  <!-- U-NET GENERATOR -->
+  <div class="arch">
+    <h2 style="color:var(--gen)">Generator: U-Net with Skip Connections</h2>
+    <svg class="main" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#22d3ee" stroke-width="1.2"/></marker>
+        <marker id="ask" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#a78bfa" stroke-width="1.2"/></marker>
+        <filter id="fg"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#22d3ee" flood-opacity=".25"/></filter>
+      </defs>
+
+      <!-- Key callout -->
+      <rect x="300" y="8" width="600" height="34" rx="8" fill="rgba(167,139,250,.05)" stroke="#a78bfa" stroke-width=".8" stroke-dasharray="3,3"/>
+      <text x="600" y="22" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="9" font-weight="500">KEY: U-Net skip connections concatenate encoder features to decoder — preserving spatial details</text>
+      <text x="600" y="36" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="8">Encoder-Decoder with skip connections recovers fine structure lost in bottleneck</text>
+
+      <!-- Input Image -->
+      <rect x="20" y="100" width="90" height="70" rx="8" fill="rgba(56,189,248,.06)" stroke="#38bdf8" stroke-width="1.5"/>
+      <text x="65" y="130" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="11" font-weight="700">Input</text>
+      <text x="65" y="148" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">256×256×3</text>
+      <text x="65" y="86" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="7" font-weight="500" opacity=".7">SOURCE</text>
+
+      <!-- U-Net Outer Box -->
+      <rect x="130" y="55" width="870" height="350" rx="14" fill="rgba(34,211,238,.03)" stroke="#22d3ee" stroke-width="1.5" filter="url(#fg)"/>
+      <text x="565" y="78" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="13" font-weight="700">U-Net Generator G(x)</text>
+
+      <!-- ═══ ENCODER (Left side, going down) ═══ -->
+      <text x="270" y="98" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="9" font-weight="600" opacity=".7">ENCODER ↓</text>
+
+      <rect x="145" y="108" width="115" height="30" rx="5" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="202" y="120" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="202" y="133" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">128×128×64</text>
+
+      <rect x="155" y="148" width="115" height="30" rx="5" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="212" y="160" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="212" y="173" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">64×64×128</text>
+
+      <rect x="165" y="188" width="115" height="30" rx="5" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="222" y="200" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="222" y="213" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">32×32×256</text>
+
+      <rect x="175" y="228" width="115" height="30" rx="5" fill="rgba(34,211,238,.09)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="232" y="240" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="232" y="253" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">16×16×512</text>
+
+      <rect x="185" y="268" width="115" height="30" rx="5" fill="rgba(34,211,238,.1)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".6"/>
+      <text x="242" y="280" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="242" y="293" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">8×8×512</text>
+
+      <!-- ═══ BOTTLENECK ═══ -->
+      <rect x="370" y="310" width="140" height="35" rx="6" fill="rgba(34,211,238,.14)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="440" y="327" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="9" font-weight="700">Bottleneck</text>
+      <text x="440" y="340" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">1×1×512 (most compressed)</text>
+
+      <!-- Down arrows encoder -->
+      <path d="M260,138 Q320,150 320,155 Q320,165 260,178" fill="none" stroke="#22d3ee" stroke-width=".6" opacity=".3"/>
+      <path d="M280,178 Q340,190 340,195 Q340,205 280,218" fill="none" stroke="#22d3ee" stroke-width=".6" opacity=".3"/>
+      <path d="M290,258 Q380,285 380,310" fill="none" stroke="#22d3ee" stroke-width=".8" opacity=".3" marker-end="url(#ag)"/>
+
+      <!-- ═══ DECODER (Right side, going up) ═══ -->
+      <text x="810" y="98" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="9" font-weight="600" opacity=".7">↑ DECODER</text>
+
+      <rect x="820" y="268" width="140" height="30" rx="5" fill="rgba(34,211,238,.1)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".6"/>
+      <text x="890" y="280" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">DeConv s2 BN ReLU Dr</text>
+      <text x="890" y="293" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">8×8×512 (+ skip = 1024)</text>
+
+      <rect x="810" y="228" width="140" height="30" rx="5" fill="rgba(34,211,238,.09)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="880" y="240" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">DeConv s2 BN ReLU</text>
+      <text x="880" y="253" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">16×16×512 (+ skip)</text>
+
+      <rect x="800" y="188" width="140" height="30" rx="5" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="870" y="200" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">DeConv s2 BN ReLU</text>
+      <text x="870" y="213" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">32×32×256 (+ skip)</text>
+
+      <rect x="790" y="148" width="140" height="30" rx="5" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="860" y="160" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">DeConv s2 BN ReLU</text>
+      <text x="860" y="173" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">64×64×128 (+ skip)</text>
+
+      <rect x="780" y="108" width="140" height="30" rx="5" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="850" y="120" text-anchor="middle" fill="#7ec8d4" font-family="JetBrains Mono" font-size="8">DeConv s2 → Tanh</text>
+      <text x="850" y="133" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">256×256×3 (output)</text>
+
+      <!-- Bottleneck → Decoder -->
+      <path d="M510,325 Q700,325 830,298" fill="none" stroke="#22d3ee" stroke-width=".8" opacity=".3" marker-end="url(#ag)"/>
+
+      <!-- ═══ SKIP CONNECTIONS (The U-Net magic) ═══ -->
+      <line x1="260" y1="123" x2="778" y2="123" stroke="#a78bfa" stroke-width="1.3" stroke-dasharray="6,4" class="flow" marker-end="url(#ask)"/>
+      <circle cx="520" cy="123" r="3" fill="#a78bfa" class="pulse"/>
+
+      <line x1="270" y1="163" x2="788" y2="163" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="6,4" class="flow" marker-end="url(#ask)"/>
+      <circle cx="530" cy="163" r="2.5" fill="#a78bfa" class="pulse"/>
+
+      <line x1="280" y1="203" x2="798" y2="203" stroke="#a78bfa" stroke-width="1.1" stroke-dasharray="6,4" class="flow" marker-end="url(#ask)"/>
+      <circle cx="540" cy="203" r="2.5" fill="#a78bfa" class="pulse"/>
+
+      <line x1="290" y1="243" x2="808" y2="243" stroke="#a78bfa" stroke-width="1" stroke-dasharray="6,4" class="flow" marker-end="url(#ask)"/>
+
+      <line x1="300" y1="283" x2="818" y2="283" stroke="#a78bfa" stroke-width=".9" stroke-dasharray="6,4" class="flow" marker-end="url(#ask)"/>
+
+      <!-- Skip label -->
+      <rect x="490" y="362" width="130" height="28" rx="5" fill="rgba(167,139,250,.06)" stroke="#a78bfa" stroke-width=".8"/>
+      <text x="555" y="376" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="8" font-weight="600">Skip = Concat(enc, dec)</text>
+      <text x="555" y="388" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Channel-wise concatenation</text>
+
+      <!-- Input → Encoder -->
+      <line x1="110" y1="135" x2="143" y2="123" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="5,3" class="flow"/>
+
+      <!-- Output Image -->
+      <rect x="960" y="100" width="90" height="70" rx="8" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="1005" y="130" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="11" font-weight="700">G(x)</text>
+      <text x="1005" y="148" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">256×256×3</text>
+      <text x="1005" y="86" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="7" font-weight="500" opacity=".7">OUTPUT</text>
+      <line x1="920" y1="123" x2="958" y2="130" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#ag)"/>
+
+      <!-- U shape hint -->
+      <text x="440" y="430" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="9" opacity=".35">────── U-shaped architecture ──────</text>
+    </svg>
+  </div>
+
+  <!-- PATCHGAN DISCRIMINATOR -->
+  <div class="arch">
+    <h2 style="color:var(--patch)">PatchGAN Discriminator D(x, y)</h2>
+    <svg class="main" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="apd" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#e879f9" stroke-width="1.2"/></marker>
+        <marker id="apo" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#fb923c" stroke-width="1.2"/></marker>
+        <filter id="fpd"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#e879f9" flood-opacity=".3"/></filter>
+      </defs>
+
+      <!-- Input pair -->
+      <rect x="30" y="50" width="100" height="55" rx="8" fill="rgba(56,189,248,.06)" stroke="#38bdf8" stroke-width="1.2"/>
+      <text x="80" y="73" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="10" font-weight="600">Input x</text>
+      <text x="80" y="92" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Source image</text>
+
+      <rect x="30" y="125" width="100" height="55" rx="8" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="80" y="148" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="10" font-weight="600">y (real/fake)</text>
+      <text x="80" y="167" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Target or G(x)</text>
+
+      <!-- Concat -->
+      <circle cx="175" cy="115" r="16" fill="rgba(167,139,250,.08)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="175" y="119" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="10" font-weight="600">⊕</text>
+      <text x="175" y="143" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Concat</text>
+      <line x1="130" y1="77" x2="159" y2="108" stroke="#38bdf8" stroke-width=".8" stroke-dasharray="4,3"/>
+      <line x1="130" y1="152" x2="159" y2="122" stroke="#34d399" stroke-width=".8" stroke-dasharray="4,3"/>
+
+      <!-- PatchGAN -->
+      <rect x="220" y="45" width="650" height="140" rx="12" fill="rgba(232,121,249,.04)" stroke="#e879f9" stroke-width="1.5" filter="url(#fpd)"/>
+      <text x="545" y="68" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="12" font-weight="700">PatchGAN Discriminator — 70×70 Receptive Field</text>
+
+      <!-- Conv layers -->
+      <rect x="240" y="82" width="110" height="30" rx="5" fill="rgba(232,121,249,.06)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".4"/>
+      <text x="295" y="94" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 LReLU</text>
+      <text x="295" y="107" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">128×128×64</text>
+
+      <rect x="360" y="82" width="110" height="30" rx="5" fill="rgba(232,121,249,.07)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="415" y="94" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="415" y="107" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">64×64×128</text>
+
+      <rect x="480" y="82" width="110" height="30" rx="5" fill="rgba(232,121,249,.08)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".5"/>
+      <text x="535" y="94" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="8">Conv4×4 s2 BN LR</text>
+      <text x="535" y="107" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">32×32×256</text>
+
+      <rect x="600" y="82" width="110" height="30" rx="5" fill="rgba(232,121,249,.09)" stroke="#e879f9" stroke-width=".6" stroke-opacity=".6"/>
+      <text x="655" y="94" text-anchor="middle" fill="#c89fe8" font-family="JetBrains Mono" font-size="8">Conv4×4 s1 BN LR</text>
+      <text x="655" y="107" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">31×31×512</text>
+
+      <rect x="720" y="82" width="130" height="30" rx="5" fill="rgba(232,121,249,.14)" stroke="#e879f9" stroke-width="1"/>
+      <text x="785" y="94" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="8" font-weight="600">Conv4×4 s1 → Sigmoid</text>
+      <text x="785" y="107" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="6">30×30×1 (patch scores)</text>
+
+      <!-- Arrows between conv -->
+      <line x1="350" y1="97" x2="358" y2="97" stroke="#e879f9" stroke-width=".7" stroke-dasharray="2,2" class="flow"/>
+      <line x1="470" y1="97" x2="478" y2="97" stroke="#e879f9" stroke-width=".7" stroke-dasharray="2,2" class="flow"/>
+      <line x1="590" y1="97" x2="598" y2="97" stroke="#e879f9" stroke-width=".7" stroke-dasharray="2,2" class="flow"/>
+      <line x1="710" y1="97" x2="718" y2="97" stroke="#e879f9" stroke-width=".7" stroke-dasharray="2,2" class="flow"/>
+
+      <!-- PatchGAN explanation -->
+      <rect x="240" y="125" width="610" height="48" rx="6" fill="rgba(232,121,249,.03)" stroke="#e879f9" stroke-width=".5" stroke-dasharray="3,3"/>
+      <text x="545" y="142" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="8" font-weight="500">Each output cell judges if its 70×70 receptive field patch is real or fake → captures LOCAL texture</text>
+      <text x="545" y="158" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Output: 30×30 matrix of real/fake scores (averaged for final loss). Acts as a texture/style loss.</text>
+      <text x="545" y="170" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Conditional: D sees BOTH source input x AND output y (concatenated) — ensures output matches input</text>
+
+      <!-- Concat → D -->
+      <line x1="191" y1="115" x2="218" y2="97" stroke="#e879f9" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#apd)"/>
+
+      <!-- Output -->
+      <rect x="900" y="70" width="100" height="55" rx="8" fill="rgba(251,146,60,.06)" stroke="#fb923c" stroke-width="1.2"/>
+      <text x="950" y="93" text-anchor="middle" fill="#fb923c" font-family="JetBrains Mono" font-size="11" font-weight="700">30×30</text>
+      <text x="950" y="112" text-anchor="middle" fill="#6b7280" font-family="JetBrains Mono" font-size="7">Patch scores</text>
+      <line x1="850" y1="97" x2="898" y2="97" stroke="#fb923c" stroke-width="1.2" stroke-dasharray="5,3" class="flow" marker-end="url(#apo)"/>
+      <circle cx="875" cy="97" r="2.5" fill="#fb923c" class="pulse"/>
+
+      <!-- D inputs label -->
+      <text x="545" y="220" text-anchor="middle" fill="#e879f9" font-family="JetBrains Mono" font-size="8" opacity=".5">D receives: {x, y_real} → 1 (real pair)  |  {x, G(x)} → 0 (fake pair)</text>
+    </svg>
+  </div>
+
+  <!-- DETAIL CARDS -->
+  <div class="cards">
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--gen),transparent)"></div>
+      <h3 style="color:var(--gen)">⬡ U-Net Generator</h3>
+      <p>Encoder-decoder with skip connections that concatenate encoder feature maps to decoder at each resolution level. This lets the network pass low-level details (edges, colors) directly across, while the bottleneck handles high-level semantics.</p>
+      <div class="f">Encoder: Conv↓ × 8 (256→1)<br>Decoder: DeConv↑ × 8 + skip concat (1→256)<br>Dropout(0.5) in first 3 decoder layers</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--patch),transparent)"></div>
+      <h3 style="color:var(--patch)">◈ PatchGAN Discriminator</h3>
+      <p>Instead of classifying the whole image as real/fake, PatchGAN classifies each 70×70 overlapping patch independently. This acts as a learned texture/style loss, penalizing unrealistic local structure while L1 handles global coherence.</p>
+      <div class="f">Input: concat(x, y) → 256×256×6<br>Output: 30×30 matrix of patch scores<br>Conditional: sees source AND target</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--skip),transparent)"></div>
+      <h3 style="color:var(--skip)">◆ Skip Connections</h3>
+      <p>The defining feature of U-Net. Each encoder layer's output is concatenated (channel-wise) with the corresponding decoder layer, doubling channel count. This shuttles fine spatial info across the bottleneck — essential for pixel-aligned tasks.</p>
+      <div class="f">dec_i = concat(enc_{n-i}, up(dec_{i-1}))<br>Channels double at each skip level</div>
+    </div>
+    <div class="card">
+      <div class="al" style="background:linear-gradient(90deg,var(--target),transparent)"></div>
+      <h3 style="color:var(--target)">★ Paired Training Data</h3>
+      <p>Requires aligned input-output pairs: {source, target}. Examples: edges→shoes, segmentation→photo, satellite→map, BW→color. The pairing provides direct supervision that enables pixel-accurate translation.</p>
+      <div class="f">Training pairs: {x_i, y_i}<br>e.g. {edge_map, photo} aligned pixel-to-pixel</div>
+    </div>
+  </div>
+
+  <!-- LOSS BREAKDOWN -->
+  <div class="loss-section">
+    <h2>▸ Objective: cGAN Loss + L1 Reconstruction</h2>
+    <div class="losses">
+      <div class="loss-card">
+        <div class="num" style="color:var(--disc)">Conditional Adversarial Loss</div>
+        <p>Standard cGAN loss — D sees both the source input x and the output (real target or generated). G tries to fool D into thinking G(x) is the real target for input x. Ensures outputs look realistic.</p>
+        <div class="f">L_cGAN = E[log D(x, y)] + E[log(1 − D(x, G(x)))]</div>
+      </div>
+      <div class="loss-card">
+        <div class="num" style="color:var(--l1)">L1 Reconstruction Loss</div>
+        <p>Direct pixel-wise L1 distance between generated output G(x) and real target y. Encourages outputs to be close to ground truth, handling global structure while D handles local texture. L1 chosen over L2 for less blurring.</p>
+        <div class="f">L_L1 = E[‖y − G(x)‖₁]<br>Full: G* = arg min_G max_D L_cGAN + λ·L_L1<br>λ = 100 (L1 heavily weighted)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
