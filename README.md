@@ -15,6 +15,7 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + From-Scratch Implementation |
 | [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
 | [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE -- Unsupervised representation learning | Vanilla AE + VAE Complete (VQVAE/RVQ Planned) |
+| [GAN](./GAN/) | Generative Adversarial Networks -- Vanilla GAN, Conditional GAN, DCGAN | Vanilla GAN + DCGAN Complete |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
 ---
@@ -77,6 +78,13 @@ transformers-CV/
 │   ├── images/                          # Theory diagrams (KL div, ELBO, VAE loss)
 │   ├── Vanilla Autoencoder/             # From-scratch AE on MNIST & FashionMNIST
 │   └── VAE/                             # From-scratch VAE on FashionMNIST
+├── GAN/
+│   ├── README.md                        # GAN overview documentation
+│   ├── Vanilla GAN/                     # Intro to GANs + 3 implementations (MNIST)
+│   ├── DCGAN/                           # Deep Convolutional GAN (CelebA)
+│   ├── images/                          # Architecture diagrams
+│   ├── animated workflow/               # 10 interactive HTML architecture diagrams
+│   └── Papers/                          # Original research papers
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
 ├── .gitignore
