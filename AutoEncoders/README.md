@@ -47,6 +47,28 @@ This folder contains from-scratch PyTorch implementations of multiple autoencode
   <img src="images/vae_loss_derivation.png" alt="VAE Loss Derivation" width="600"/>
 </p>
 
+### VQ-VAE Architecture
+
+<p align="center">
+  <img src="images/VQ-VAE.png" alt="VQ-VAE Overview" width="600"/>
+</p>
+
+<p align="center">
+  <img src="images/VQ-VAE architecture.png" alt="VQ-VAE Architecture Diagram" width="700"/>
+</p>
+
+### Vector Quantization (K-Means Intuition)
+
+<p align="center">
+  <img src="images/K-means.png" alt="K-Means Clustering Intuition" width="600"/>
+</p>
+
+### Bit Depth & Codebook Capacity
+
+<p align="center">
+  <img src="images/bit-depth.png" alt="Bit Depth and Codebook Capacity" width="600"/>
+</p>
+
 ---
 
 ## Implementations
@@ -63,9 +85,13 @@ Probabilistic autoencoder that learns a latent distribution (mean and log-varian
   <img src="images/VAE.png" alt="VAE Architecture" width="500"/>
 </p>
 
-### VQ-VAE *(Coming Soon)*
+### [Vector Quantized VAE (VQ-VAE)](VQVAE/)
 
-Vector Quantized VAE with discrete codebook-based latent representations.
+VQ-VAE replaces the continuous latent space with a **discrete codebook** of learned embedding vectors. The encoder output is quantized to the nearest codebook entry via vector quantization. Uses the **straight-through estimator** for gradient flow and a combined reconstruction + codebook + commitment loss. Both linear and convolutional variants are implemented, trained on FashionMNIST.
+
+<p align="center">
+  <img src="images/VQ-VAE.png" alt="VQ-VAE Architecture" width="500"/>
+</p>
 
 ### RVQ *(Coming Soon)*
 
@@ -80,6 +106,10 @@ AutoEncoders/
 ├── README.md
 ├── images/
 │   ├── VAE.png
+│   ├── VQ-VAE.png
+│   ├── VQ-VAE architecture.png
+│   ├── K-means.png
+│   ├── bit-depth.png
 │   ├── autoencoders vs vae.png
 │   ├── kl_div_discrete.png
 │   ├── kl_div_gaussian.png
@@ -98,7 +128,12 @@ AutoEncoders/
 │   ├── VAE architecture.png
 │   ├── VAE architecture overview.excalidraw
 │   └── VAE paper.pdf
-├── VQ-VAE/                          (Planned)
+├── VQVAE/
+│   ├── README.md
+│   ├── Vector_Quantized_Variational_AutoEncoders.ipynb
+│   ├── models.py
+│   ├── utils.py
+│   └── VQVAE paper.pdf
 └── RVQ/                             (Planned)
 ```
 
@@ -110,6 +145,7 @@ AutoEncoders/
 |----------|------|
 | Autoencoder (Wikipedia) | [en.wikipedia.org/wiki/Autoencoder](https://en.wikipedia.org/wiki/Autoencoder) |
 | VAE Paper (Kingma & Welling, 2013) | [arxiv.org/abs/1312.6114](https://arxiv.org/abs/1312.6114) |
+| VQ-VAE Paper (van den Oord et al., 2017) | [arxiv.org/abs/1711.00937](https://arxiv.org/abs/1711.00937) |
 | Tutorial on VAEs (Doersch, 2016) | [arxiv.org/abs/1606.05908](https://arxiv.org/abs/1606.05908) |
 | Understanding VAEs | [lilianweng.github.io](https://lilianweng.github.io/posts/2018-08-12-vae/) |
 | PyTorch Documentation | [pytorch.org](https://pytorch.org/) |
