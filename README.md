@@ -14,7 +14,7 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [SAM](./SAM/) | Segment Anything Model -- Foundation model for image segmentation | Documentation + Inference (SAM + SAM 2) |
 | [TimeSformer](./TimeSformer/) | Space-Time Attention for Video Understanding | Documentation + From-Scratch Implementation |
 | [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
-| [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE -- Unsupervised representation learning | Vanilla AE + VAE Complete (VQVAE/RVQ Planned) |
+| [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE, VQ-VAE -- Unsupervised representation learning | Vanilla AE + VAE + VQ-VAE Complete (RVQ Planned) |
 | [GAN](./GAN/) | Generative Adversarial Networks -- Vanilla GAN, Conditional GAN, DCGAN | Vanilla GAN + DCGAN Complete |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
@@ -75,9 +75,10 @@ transformers-CV/
 │   └── Flamingo VLM paper.pdf          # Original research paper
 ├── AutoEncoders/
 │   ├── README.md                        # AutoEncoders overview documentation
-│   ├── images/                          # Theory diagrams (KL div, ELBO, VAE loss)
+│   ├── images/                          # Theory diagrams (KL div, ELBO, VAE loss, VQ-VAE)
 │   ├── Vanilla Autoencoder/             # From-scratch AE on MNIST & FashionMNIST
-│   └── VAE/                             # From-scratch VAE on FashionMNIST
+│   ├── VAE/                             # From-scratch VAE on FashionMNIST
+│   └── VQVAE/                           # From-scratch VQ-VAE on FashionMNIST
 ├── GAN/
 │   ├── README.md                        # GAN overview documentation
 │   ├── Vanilla GAN/                     # Intro to GANs + 3 implementations (MNIST)
