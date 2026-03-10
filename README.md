@@ -16,6 +16,8 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
 | [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE, VQ-VAE -- Unsupervised representation learning | Vanilla AE + VAE + VQ-VAE Complete (RVQ Planned) |
 | [GAN](./GAN/) | Generative Adversarial Networks -- Vanilla GAN, Conditional GAN, DCGAN | Vanilla GAN + DCGAN Complete |
+| [Diffusion](./Diffusion/) | Diffusion Models -- DDPM | Paper + Architecture Diagrams (Code Planned) |
+| [JEPA](./JEPA/) | Joint-Embedding Predictive Architecture -- I-JEPA, V-JEPA, V-JEPA 2, LLM-JEPA | Papers + Architecture Diagrams |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
 ---
@@ -86,6 +88,18 @@ transformers-CV/
 │   ├── images/                          # Architecture diagrams
 │   ├── animated workflow/               # 10 interactive HTML architecture diagrams
 │   └── Papers/                          # Original research papers
+├── Diffusion/
+│   └── DDPM/                            # Denoising Diffusion Probabilistic Models
+│       ├── DDPM breakdown.excalidraw    # Architecture breakdown diagram
+│       ├── DDPM paper.pdf               # Original research paper
+│       └── images/                      # Architecture and process diagrams
+├── JEPA/
+│   ├── README.md                        # JEPA family overview documentation
+│   ├── architecture/                    # Architecture diagrams (I-JEPA, V-JEPA, V-JEPA 2, LLM-JEPA)
+│   ├── I-JEPA paper.pdf                 # I-JEPA research paper
+│   ├── V-JEPA paper.pdf                 # V-JEPA research paper
+│   ├── V-JEPA 2 paper.pdf              # V-JEPA 2 research paper
+│   └── llm-JEPA paper.pdf              # LLM-JEPA research paper
 ├── DeIT/
 │   └── DeIT paper.pdf                   # DeiT research paper
 ├── .gitignore
