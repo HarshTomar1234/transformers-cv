@@ -91,9 +91,9 @@ transformers-CV/
 ├── Diffusion/
 │   └── DDPM/                            # Denoising Diffusion Probabilistic Models
 │       ├── README.md                    # DDPM documentation with results
-│       ├── DDPM_from_scratch.ipynb      # FashionMNIST 28×28 (Verified ✅)
-│       ├── DDPM_CIFAR10.ipynb           # CIFAR-10 32×32 RGB (Verified ✅)
-│       ├── DDPM_CelebA.ipynb            # CelebA 64×64 RGB (Requires Colab Pro)
+│       ├── DDPM_from_scratch.ipynb      # FashionMNIST 28×28
+│       ├── DDPM_CIFAR10.ipynb           # CIFAR-10 32×32 RGB
+│       ├── DDPM_CelebA.ipynb            # CelebA 64×64 RGB
 │       ├── DDPM breakdown.excalidraw    # Architecture breakdown diagram
 │       ├── DDPM paper.pdf               # Original research paper
 │       └── images/                      # Architecture diagrams + training results
