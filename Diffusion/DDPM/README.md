@@ -8,11 +8,11 @@ From-scratch implementations of **DDPM** on three datasets -- FashionMNIST, CIFA
 
 ## Implementations
 
-| Notebook | Dataset | Resolution | Channels | Training Time (T4) | Status |
-|----------|---------|------------|----------|---------------------|--------|
-| [DDPM_from_scratch.ipynb](./DDPM_from_scratch.ipynb) | FashionMNIST | 28x28 | 1 (grayscale) | ~45 min (50 epochs) | Verified |
-| [DDPM_CIFAR10.ipynb](./DDPM_CIFAR10.ipynb) | CIFAR-10 | 32x32 | 3 (RGB) | ~5 hours (80 epochs) | Verified |
-| [DDPM_CelebA.ipynb](./DDPM_CelebA.ipynb) | CelebA | 64x64 | 3 (RGB) | ~8-12 hours (100 epochs) | Requires Colab Pro |
+| Notebook | Dataset | Resolution | Channels | Training Time (T4) |
+|----------|---------|------------|----------|---------------------|
+| [DDPM_from_scratch.ipynb](./DDPM_from_scratch.ipynb) | FashionMNIST | 28x28 | 1 (grayscale) | ~45 min (50 epochs) |
+| [DDPM_CIFAR10.ipynb](./DDPM_CIFAR10.ipynb) | CIFAR-10 | 32x32 | 3 (RGB) | ~5 hours (80 epochs) |
+| [DDPM_CelebA.ipynb](./DDPM_CelebA.ipynb) | CelebA | 64x64 | 3 (RGB) | ~8-12 hours (100 epochs) |
 
 ---
 
@@ -138,13 +138,6 @@ The reverse process shows clear coarse-to-fine generation: colored blobs form ar
 **64 Generated Samples:**
 
 <img src="https://github.com/HarshTomar1234/transformers-cv/blob/main/Diffusion/DDPM/images/cifar10_64_samples.png?raw=true" alt="CIFAR-10 64 Samples" width="600"/>
-
----
-
-### CelebA (64x64 RGB) -- Planned
-
-The CelebA notebook is ready to train but requires Colab Pro for sufficient GPU time (~8-12 hours on T4).
-Results will be added once training is complete.
 
 ---
 
