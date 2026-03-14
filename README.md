@@ -16,7 +16,7 @@ A comprehensive repository for understanding and implementing transformer-based 
 | [Flamingo VLM](./Flamingo%20VLM/) | Visual Language Model -- Few-shot multimodal learning | Documentation + Inference |
 | [AutoEncoders](./AutoEncoders/) | Vanilla AE, VAE, VQ-VAE -- Unsupervised representation learning | Vanilla AE + VAE + VQ-VAE Complete (RVQ Planned) |
 | [GAN](./GAN/) | Generative Adversarial Networks -- Vanilla GAN, Conditional GAN, DCGAN | Vanilla GAN + DCGAN Complete |
-| [Diffusion](./Diffusion/) | Diffusion Models -- DDPM | Paper + Architecture Diagrams (Code Planned) |
+| [Diffusion](./Diffusion/) | Diffusion Models -- DDPM from scratch (FashionMNIST, CIFAR-10, CelebA) | DDPM Complete (3 Datasets) |
 | [JEPA](./JEPA/) | Joint-Embedding Predictive Architecture -- I-JEPA, V-JEPA, V-JEPA 2, LLM-JEPA | Papers + Architecture Diagrams |
 | [DeiT](./DeIT/) | Data-efficient Image Transformers | Paper Only |
 
@@ -90,9 +90,13 @@ transformers-CV/
 │   └── Papers/                          # Original research papers
 ├── Diffusion/
 │   └── DDPM/                            # Denoising Diffusion Probabilistic Models
+│       ├── README.md                    # DDPM documentation with results
+│       ├── DDPM_from_scratch.ipynb      # FashionMNIST 28×28 (Verified ✅)
+│       ├── DDPM_CIFAR10.ipynb           # CIFAR-10 32×32 RGB (Verified ✅)
+│       ├── DDPM_CelebA.ipynb            # CelebA 64×64 RGB (Requires Colab Pro)
 │       ├── DDPM breakdown.excalidraw    # Architecture breakdown diagram
 │       ├── DDPM paper.pdf               # Original research paper
-│       └── images/                      # Architecture and process diagrams
+│       └── images/                      # Architecture diagrams + training results
 ├── JEPA/
 │   ├── README.md                        # JEPA family overview documentation
 │   ├── architecture/                    # Architecture diagrams (I-JEPA, V-JEPA, V-JEPA 2, LLM-JEPA)
